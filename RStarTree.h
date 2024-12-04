@@ -3,28 +3,36 @@
 
 #include <vector>
 #include <limits>
-#include <cmath>
+#include <algorithm>
 #include <iostream>
+#include <cmath>
+
+
+using namespace std;
 
 struct Rectangle {
-    std::vector<float> minCoords, maxCoords;
+    vector<float> minCoords, maxCoords;
 
     Rectangle() = default;
     Rectangle(int dimensions);
-    Rectangle(const std::vector<float>& min, const std::vector<float>& max);
+    Rectangle(const vector<float>& min, const vector<float>& max);
 
     float area() const;
     float overlap(const Rectangle& other) const;
     Rectangle combine(const Rectangle& other) const;
     bool contains(const Rectangle& other) const;
+
+    bool operator==(const Rectangle& other) const {
+        return minCoords == other.minCoords && maxCoords == other.maxCoords;
+    }
 };
 
 class RStarTree {
-private:
+public:
     struct Node {
         bool isLeaf;
-        std::vector<Rectangle> entries;
-        std::vector<Node*> children;
+        vector<Rectangle> entries;
+        vector<Node*> children;
         Node* parent;
 
         Node(bool leaf);
@@ -39,19 +47,15 @@ private:
     void insert(Node* currentNode, const Rectangle& entry);
     void splitNode(Node* node);
     Node* chooseSubtree(Node* currentNode, const Rectangle& entry);
-    void adjustTree(Node* node);
+    void rangeQueryHelper(Node* node, const Rectangle& query, vector<Rectangle>& results) const;
+    Rectangle computeBoundingRectangle(Node* node) const;
+    void handleOverflow(Node* node);
 
-public:
     RStarTree(int maxEntries, int dimensions);
     ~RStarTree();
 
     void insert(const Rectangle& entry);
-
-    std::vector<Rectangle> rangeQuery(const Rectangle& query) const;
-    void rangeQueryHelper(Node* node, const Rectangle& query, std::vector<Rectangle>& results) const;
-
-    Rectangle computeBoundingRectangle(Node* node) const;
-
+    vector<Rectangle> rangeQuery(const Rectangle& query) const;
     void printTree() const;
     void printTree(Node* node, int depth) const;
 };

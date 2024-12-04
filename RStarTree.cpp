@@ -1,52 +1,33 @@
 #include "RStarTree.h"
-#include <algorithm>
-#include <iostream>
 
-// Rectangle Implementation
 Rectangle::Rectangle(int dimensions)
-    : minCoords(dimensions, std::numeric_limits<float>::max()),
-      maxCoords(dimensions, std::numeric_limits<float>::lowest()) {}
+    : minCoords(dimensions, numeric_limits<float>::max()),
+      maxCoords(dimensions, numeric_limits<float>::lowest()) {}
 
-Rectangle::Rectangle(const std::vector<float>& min, const std::vector<float>& max)
+Rectangle::Rectangle(const vector<float>& min, const vector<float>& max)
     : minCoords(min), maxCoords(max) {}
 
 float Rectangle::area() const {
     float result = 1.0f;
-    for (size_t i = 0; i < minCoords.size(); ++i) {
+    for (size_t i = 0; i < minCoords.size(); ++i)
         result *= (maxCoords[i] - minCoords[i]);
-    }
-    return result;
-}
-
-float Rectangle::overlap(const Rectangle& other) const {
-    float result = 1.0f;
-    for (size_t i = 0; i < minCoords.size(); ++i) {
-        float overlapMin = std::max(minCoords[i], other.minCoords[i]);
-        float overlapMax = std::min(maxCoords[i], other.maxCoords[i]);
-        if (overlapMax >= overlapMin) {  // Include touching boundaries
-            result *= (overlapMax - overlapMin);
-        } else {
-            return 0.0f;  // No overlap
-        }
-    }
     return result;
 }
 
 Rectangle Rectangle::combine(const Rectangle& other) const {
-    std::vector<float> newMin(minCoords.size());
-    std::vector<float> newMax(maxCoords.size());
+    vector<float> newMin(minCoords.size());
+    vector<float> newMax(maxCoords.size());
     for (size_t i = 0; i < minCoords.size(); ++i) {
-        newMin[i] = std::min(minCoords[i], other.minCoords[i]);
-        newMax[i] = std::max(maxCoords[i], other.maxCoords[i]);
+        newMin[i] = min(minCoords[i], other.minCoords[i]);
+        newMax[i] = max(maxCoords[i], other.maxCoords[i]);
     }
     return Rectangle(newMin, newMax);
 }
 
 bool Rectangle::contains(const Rectangle& other) const {
     for (size_t i = 0; i < minCoords.size(); ++i) {
-        if (minCoords[i] > other.minCoords[i] || maxCoords[i] < other.maxCoords[i]) {
+        if (minCoords[i] > other.minCoords[i] || maxCoords[i] < other.maxCoords[i])
             return false;
-        }
     }
     return true;
 }
@@ -55,16 +36,14 @@ bool Rectangle::contains(const Rectangle& other) const {
 RStarTree::Node::Node(bool leaf) : isLeaf(leaf), parent(nullptr) {}
 
 RStarTree::Node::~Node() {
-    for (auto* child : children) {
+    for (auto* child : children)
         delete child;
-    }
 }
 
 // RStarTree Implementation
 RStarTree::RStarTree(int maxEntries, int dimensions)
     : maxEntries(maxEntries), minEntries(maxEntries / 2), dimensions(dimensions) {
     root = new Node(true);
-    std::cout << "Initialized R*-Tree with root node.\n";
 }
 
 RStarTree::~RStarTree() {
@@ -76,145 +55,244 @@ void RStarTree::insert(const Rectangle& entry) {
 }
 
 void RStarTree::insert(Node* currentNode, const Rectangle& entry) {
+    if (!currentNode) {
+        cerr << "Error: currentNode is null!" << endl;
+        return;
+    }
+
     if (currentNode->isLeaf) {
         currentNode->entries.push_back(entry);
-        if (currentNode->entries.size() > maxEntries) {
+        if (currentNode->entries.size() > maxEntries)
             splitNode(currentNode);
-        }
     } else {
         Node* subtree = chooseSubtree(currentNode, entry);
-        insert(subtree, entry);
+        if (subtree)
+            insert(subtree, entry);
+        else 
+            cerr << "Error: No valid subtree found!" << endl;
     }
 }
 
 RStarTree::Node* RStarTree::chooseSubtree(Node* currentNode, const Rectangle& entry) {
-    Node* bestNode = nullptr;
-    float minIncrease = std::numeric_limits<float>::max();
+    if (currentNode->isLeaf) {
+        cerr << "Error: chooseSubtree called on a leaf node!" << endl;
+        return nullptr;
+    }
+
+    Node* bestChild = nullptr;
+    float minAreaIncrease = numeric_limits<float>::max();
 
     for (size_t i = 0; i < currentNode->entries.size(); ++i) {
         Rectangle combined = currentNode->entries[i].combine(entry);
-        float increase = combined.area() - currentNode->entries[i].area();
-        if (increase < minIncrease) {
-            minIncrease = increase;
-            bestNode = currentNode->children[i];
+        float areaIncrease = combined.area() - currentNode->entries[i].area();
+
+        if (areaIncrease < minAreaIncrease) {
+            minAreaIncrease = areaIncrease;
+            bestChild = currentNode->children[i];
         }
     }
 
-    return bestNode;
-}
+    if (!bestChild)
+        cerr << "Error: No valid subtree found in chooseSubtree!" << endl;
 
-void RStarTree::splitNode(Node* node) {
-    Node* newNode = new Node(node->isLeaf);
-    size_t splitIndex = node->entries.size() / 2;
-
-    // Move half of the entries to the new node
-    for (size_t i = splitIndex; i < node->entries.size(); ++i) {
-        newNode->entries.push_back(node->entries[i]);
-    }
-    node->entries.resize(splitIndex);
-
-    if (node->parent == nullptr) {
-        // Create a new root if the node is the root
-        root = new Node(false);
-        root->children.push_back(node);
-        root->children.push_back(newNode);
-
-        node->parent = root;
-        newNode->parent = root;
-
-        root->entries.push_back(computeBoundingRectangle(node));
-        root->entries.push_back(computeBoundingRectangle(newNode));
-    } else {
-        // Add the new node to the parent
-        node->parent->children.push_back(newNode);
-        newNode->parent = node->parent;
-
-        // Update parent's bounding rectangles
-        size_t childIndex = std::distance(
-            node->parent->children.begin(),
-            std::find(node->parent->children.begin(), node->parent->children.end(), static_cast<RStarTree::Node*>(node))
-        );
-
-        node->parent->entries[childIndex] = computeBoundingRectangle(node);
-        node->parent->entries.push_back(computeBoundingRectangle(newNode));
-
-        if (node->parent->entries.size() > maxEntries) {
-            splitNode(node->parent);
-        }
-    }
-}
-
-void RStarTree::adjustTree(Node* node) {
-    while (node != nullptr) {
-        if (node->parent != nullptr) {
-            size_t childIndex = std::distance(
-                node->parent->children.begin(),
-                std::find(node->parent->children.begin(), node->parent->children.end(), static_cast<RStarTree::Node*>(node))
-            );
-            node->parent->entries[childIndex] = computeBoundingRectangle(node);
-        }
-
-        if (node->entries.size() > maxEntries) {
-            splitNode(node);
-        }
-
-        node = node->parent;
-    }
+    return bestChild;
 }
 
 Rectangle RStarTree::computeBoundingRectangle(Node* node) const {
-    std::vector<float> minCoords(dimensions, std::numeric_limits<float>::max());
-    std::vector<float> maxCoords(dimensions, std::numeric_limits<float>::lowest());
+    vector<float> minCoords(dimensions, numeric_limits<float>::max());
+    vector<float> maxCoords(dimensions, numeric_limits<float>::lowest());
 
     for (const auto& entry : node->entries) {
         for (size_t i = 0; i < dimensions; ++i) {
-            minCoords[i] = std::min(minCoords[i], entry.minCoords[i]);
-            maxCoords[i] = std::max(maxCoords[i], entry.maxCoords[i]);
+            minCoords[i] = min(minCoords[i], entry.minCoords[i]);
+            maxCoords[i] = max(maxCoords[i], entry.maxCoords[i]);
         }
     }
 
     return Rectangle(minCoords, maxCoords);
 }
 
-std::vector<Rectangle> RStarTree::rangeQuery(const Rectangle& query) const {
-    std::vector<Rectangle> results;
-    if (root) {
-        rangeQueryHelper(root, query, results);
+void RStarTree::splitNode(Node* node) {
+    if (!node || node->entries.empty()) {
+        cerr << "Error: Invalid node in splitNode!" << endl;
+        return;
     }
-    return results;
-}
 
-void RStarTree::rangeQueryHelper(Node* node, const Rectangle& query, std::vector<Rectangle>& results) const {
+    Node* newNode = new Node(node->isLeaf);
+
+    // Optimal Seed Picking: Find the pair of entries farthest apart
+    size_t bestSeed1 = 0, bestSeed2 = 1;
+    float maxSeparation = -1.0f;
+
     for (size_t i = 0; i < node->entries.size(); ++i) {
-        if (query.overlap(node->entries[i]) > 0) {  // Check for overlap
-            if (node->isLeaf) {
-                results.push_back(node->entries[i]);
-            } else {
-                rangeQueryHelper(node->children[i], query, results);
+        for (size_t j = i + 1; j < node->entries.size(); ++j) {
+            Rectangle combined = node->entries[i].combine(node->entries[j]);
+            float separation = combined.area() - node->entries[i].area() - node->entries[j].area();
+            if (separation > maxSeparation) {
+                maxSeparation = separation;
+                bestSeed1 = i;
+                bestSeed2 = j;
             }
         }
     }
+
+    // Move the seeds to separate nodes
+    newNode->entries.push_back(node->entries[bestSeed2]);
+    node->entries.erase(node->entries.begin() + bestSeed2);
+
+    newNode->entries.push_back(node->entries[bestSeed1]);
+    node->entries.erase(node->entries.begin() + bestSeed1);
+
+    if (!node->isLeaf) {
+        newNode->children.push_back(node->children[bestSeed2]);
+        newNode->children.back()->parent = newNode;
+        node->children.erase(node->children.begin() + bestSeed2);
+
+        newNode->children.push_back(node->children[bestSeed1]);
+        newNode->children.back()->parent = newNode;
+        node->children.erase(node->children.begin() + bestSeed1);
+    }
+
+    // Distribute remaining entries
+    for (const auto& entry : node->entries) {
+        Rectangle combined1 = computeBoundingRectangle(node).combine(entry);
+        Rectangle combined2 = computeBoundingRectangle(newNode).combine(entry);
+
+        if (combined1.area() < combined2.area())
+            node->entries.push_back(entry);
+        else
+            newNode->entries.push_back(entry);
+    }
+
+    if (!node->isLeaf) {
+        for (size_t i = 0; i < node->children.size(); ++i) {
+            newNode->children.push_back(node->children[i]);
+            newNode->children.back()->parent = newNode;
+        }
+        node->children.clear();
+    }
+
+    // Update parent node
+    if (!node->parent) {
+        root = new Node(false);
+        root->children.push_back(node);
+        root->children.push_back(newNode);
+        root->entries.push_back(computeBoundingRectangle(node));
+        root->entries.push_back(computeBoundingRectangle(newNode));
+        node->parent = root;
+        newNode->parent = root;
+    } else {
+        Node* parent = node->parent;
+        parent->children.push_back(newNode);
+        parent->entries.push_back(computeBoundingRectangle(newNode));
+        newNode->parent = parent;
+
+        // If the parent overflows, split the parent
+        if (parent->entries.size() > maxEntries)
+            splitNode(parent);
+    }
+
+    // Clear node entries after splitting
+    node->entries.clear();
 }
+
+void RStarTree::handleOverflow(Node* node) {
+    if (!node || node->entries.size() <= maxEntries) return;
+
+    cout << "Handling overflow for node with " << node->entries.size() << " entries.\n";
+
+    // Compute the center of the node's bounding rectangle
+    Rectangle boundingRect = computeBoundingRectangle(node);
+    vector<float> center(dimensions);
+    for (size_t i = 0; i < dimensions; ++i) 
+        center[i] = (boundingRect.minCoords[i] + boundingRect.maxCoords[i]) / 2.0f;
+
+    // Sort entries by distance from the center
+    vector<pair<float, size_t>> distances;
+    for (size_t i = 0; i < node->entries.size(); ++i) {
+        float distance = 0.0f;
+        for (size_t j = 0; j < dimensions; ++j) {
+            float diff = (node->entries[i].minCoords[j] + node->entries[i].maxCoords[j]) / 2.0f - center[j];
+            distance += diff * diff;
+        }
+        distances.push_back(make_pair(sqrt(distance), i));
+    }
+
+    sort(distances.begin(), distances.end(),
+              [](const auto& a, const auto& b) { return a.first > b.first; });
+
+    size_t numReinsert = static_cast<size_t>(0.3 * node->entries.size());
+    vector<Rectangle> reinsertEntries;
+
+    for (size_t i = 0; i < numReinsert; ++i) {
+        size_t index = distances[i].second;
+        reinsertEntries.push_back(node->entries[index]);
+    }
+
+    for (const auto& entry : reinsertEntries) {
+        node->entries.erase(
+            remove(node->entries.begin(), node->entries.end(), entry),
+            node->entries.end()
+        );
+        insert(entry); // Reinsertion
+    }
+
+    if (node->entries.size() > maxEntries)
+        splitNode(node);
+}
+
+
 
 void RStarTree::printTree() const {
     printTree(root, 0);
 }
 
 void RStarTree::printTree(Node* node, int depth) const {
-    for (int i = 0; i < depth; ++i) {
-        std::cout << "  ";
-    }
-    std::cout << (node->isLeaf ? "Leaf" : "Internal") << " Node: ";
-    for (const auto& rect : node->entries) {
-        std::cout << "[(";
-        for (float val : rect.minCoords) std::cout << val << " ";
-        std::cout << "), (";
-        for (float val : rect.maxCoords) std::cout << val << " ";
-        std::cout << ")] ";
-    }
-    std::cout << "\n";
+    if (!node) return;
 
-    for (auto* child : node->children) {
-        printTree(child, depth + 1);
+    for (int i = 0; i < depth; ++i) cout << "  ";
+    cout << (node->isLeaf ? "Leaf" : "Internal") << " Node: ";
+    for (const auto& rect : node->entries) {
+        cout << "[(";
+        for (float val : rect.minCoords) cout << val << " ";
+        cout << "), (";
+        for (float val : rect.maxCoords) cout << val << " ";
+        cout << ")] ";
     }
+    cout << "\n";
+
+    for (auto* child : node->children)
+        printTree(child, depth + 1);
+}
+
+vector<Rectangle> RStarTree::rangeQuery(const Rectangle& query) const {
+    vector<Rectangle> results;
+    if (root) 
+        rangeQueryHelper(root, query, results);
+    return results;
+}
+
+void RStarTree::rangeQueryHelper(Node* node, const Rectangle& query, vector<Rectangle>& results) const {
+    if (!node) return;
+
+    for (const auto& entry : node->entries) {
+        if (query.overlap(entry) > 0) { // Check for overlap
+            if (node->isLeaf)
+                results.push_back(entry);
+            else {
+                for (Node* child : node->children)
+                    rangeQueryHelper(child, query, results);
+            }
+        }
+    }
+}
+
+float Rectangle::overlap(const Rectangle& other) const {
+    for (size_t i = 0; i < minCoords.size(); ++i) {
+        if (maxCoords[i] < other.minCoords[i] || minCoords[i] > other.maxCoords[i]) {
+            // No overlap in this dimension
+            return 0.0f;
+        }
+    }
+    return 1.0f; // Overlap exists
 }

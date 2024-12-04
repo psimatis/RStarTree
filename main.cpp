@@ -1,32 +1,48 @@
 #include "RStarTree.h"
 #include <iostream>
+#include <cstdlib>
+#include <ctime>
 
 int main() {
-    RStarTree tree(4, 2);
+    RStarTree tree(100, 20);
 
-    // Insert rectangles
-    tree.insert(Rectangle({0, 0}, {1, 1}));
-    tree.insert(Rectangle({2, 2}, {3, 3}));
-    tree.insert(Rectangle({4, 4}, {5, 5}));
-    tree.insert(Rectangle({6, 6}, {7, 7}));
-    tree.insert(Rectangle({8, 8}, {9, 9}));
+    // Seed for random number generation
+    srand(time(nullptr));
+
+    // // Insert randomly generated rectangles
+    // for (int i = 0; i < 10; ++i) {
+    //     float x1 = static_cast<float>(rand() % 100) / 10.0f;
+    //     float y1 = static_cast<float>(rand() % 100) / 10.0f;
+    //     float x2 = x1 + static_cast<float>(rand() % 50) / 10.0f;
+    //     float y2 = y1 + static_cast<float>(rand() % 50) / 10.0f;
+
+    //     tree.insert(Rectangle({x1, y1}, {x2, y2}));
+    // }
+
+    // Insert randomly generated points
+    for (int i = 0; i < 10; ++i) {
+        float x1 = static_cast<float>(rand() % 10);
+        float y1 = static_cast<float>(rand() % 10);
+        tree.insert(Rectangle({x1, y1}, {x1, y1}));
+    }
 
     // Print tree structure
-    std::cout << "R*-Tree Structure:\n";
+    cout << "R*-Tree Structure:\n";
     tree.printTree();
 
     // Perform range query
-    Rectangle query({1, 1}, {5, 5});
-    std::cout << "\nPerforming Range Query with Rectangle: [(1, 1), (5, 5)]\n";
+    Rectangle query({0, 0}, {8, 8});
+    cout << "\nPerforming Range Query: [(0, 0), (8, 8)]\n";
 
     auto results = tree.rangeQuery(query);
-    std::cout << "results size: " << results.size() << std::endl;
+    cout << "Results size: " << results.size() << endl;
+
     for (const auto& rect : results) {
-        std::cout << "Found Rectangle: [(";
-        for (float val : rect.minCoords) std::cout << val << " ";
-        std::cout << "), (";
-        for (float val : rect.maxCoords) std::cout << val << " ";
-        std::cout << ")]\n";
+        cout << "Found Rectangle: [(";
+        for (float val : rect.minCoords) cout << val << " ";
+        cout << "), (";
+        for (float val : rect.maxCoords) cout << val << " ";
+        cout << ")]\n";
     }
 
     return 0;
