@@ -15,5 +15,19 @@ int main() {
     std::cout << "R*-Tree Structure:\n";
     tree.printTree();
 
+    // Perform range query
+    Rectangle query({1, 1}, {5, 5});
+    std::cout << "\nPerforming Range Query with Rectangle: [(1, 1), (5, 5)]\n";
+
+    auto results = tree.rangeQuery(query);
+    std::cout << "results size: " << results.size() << std::endl;
+    for (const auto& rect : results) {
+        std::cout << "Found Rectangle: [(";
+        for (float val : rect.minCoords) std::cout << val << " ";
+        std::cout << "), (";
+        for (float val : rect.maxCoords) std::cout << val << " ";
+        std::cout << ")]\n";
+    }
+
     return 0;
 }
