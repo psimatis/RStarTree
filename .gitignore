@@ -1,0 +1,45 @@
+# Ignore compiled object files and binaries
+*.o
+*.out
+*.exe
+*.a
+*.so
+*.dll
+
+# Ignore build directories
+/build/
+/dist/
+
+# Ignore generated files
+*.log
+*.tmp
+
+# Ignore editor/IDE-specific files
+.vscode/
+.idea/
+*.swp
+*~
+*.sublime-workspace
+*.sublime-project
+
+# Ignore CMake files
+CMakeFiles/
+CMakeCache.txt
+Makefile
+cmake_install.cmake
+
+# Ignore debugging files
+*.dSYM/
+*.core
+*.stackdump
+
+# Ignore generated documentation
+/doc/
+/docs/
+
+# Ignore temporary system files
+.DS_Store
+Thumbs.db
+
+# Ignore executables (e.g., `rstartree` in your case)
+rstartree
