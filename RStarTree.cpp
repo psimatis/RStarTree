@@ -98,24 +98,31 @@ RStarTree::~RStarTree() {
 }
 
 void RStarTree::insert(const Rectangle& entry) {
-    insert(root, entry);
+    insert(root, entry, false);
 }
 
-void RStarTree::insert(Node* currentNode, const Rectangle& entry) {
-    if (!currentNode) {
+
+void RStarTree::insert(Node* node, const Rectangle& entry, bool reinserting) {
+    if (!node) {
         cerr << "Error: currentNode is null!" << endl;
         return;
     }
 
-    if (currentNode->isLeaf) {
-        currentNode->entries.push_back(entry);
-        if (currentNode->entries.size() > maxEntries)
-            splitNode(currentNode);
+    if (node->isLeaf) {
+        node->entries.push_back(entry);
+
+        if (node->entries.size() > maxEntries){
+            // Reinsert 30% of the entries
+            if (reinserting == false) reinsert(node);
+
+            // If the node still overflows after reinsertion, split it
+            if (node->entries.size() > maxEntries) splitNode(node);
+        }
     } else {
-        Node* subtree = chooseSubtree(currentNode, entry);
+        Node* subtree = chooseSubtree(node, entry);
         if (subtree)
-            insert(subtree, entry);
-        else 
+            insert(subtree, entry, reinserting);
+        else
             cerr << "Error: No valid subtree found!" << endl;
     }
 }
@@ -144,7 +151,6 @@ Node* RStarTree::chooseSubtree(Node* currentNode, const Rectangle& entry) {
 
     return bestChild;
 }
-
 
 void RStarTree::splitNode(Node* node) {
     if (!node || node->entries.empty()) {
@@ -253,12 +259,12 @@ void RStarTree::adjustBoundingRectangle(Node* node) {
 }
 
 
-void RStarTree::handleOverflow(Node* node) {
-    if (!node || node->entries.size() <= maxEntries) return;
+void RStarTree::reinsert(Node* node) {
+    size_t numReinsert = static_cast<size_t>(ceil(0.3 * node->entries.size()));
 
-    cout << "Handling overflow for node with " << node->entries.size() << " entries.\n";
+    if (numReinsert == 0) return;
 
-    // Compute the center of the node's bounding rectangle
+    // Compute the center of the bounding rectangle
     Rectangle boundingRect = Rectangle::combine(node->entries);
     vector<float> center(dimensions);
     for (size_t i = 0; i < dimensions; ++i) 
@@ -272,13 +278,11 @@ void RStarTree::handleOverflow(Node* node) {
             float diff = (node->entries[i].minCoords[j] + node->entries[i].maxCoords[j]) / 2.0f - center[j];
             distance += diff * diff;
         }
-        distances.push_back(make_pair(sqrt(distance), i));
+        distances.emplace_back(distance, i);
     }
 
-    sort(distances.begin(), distances.end(),
-              [](const auto& a, const auto& b) { return a.first > b.first; });
+    sort(distances.rbegin(), distances.rend()); // Sort in descending order
 
-    size_t numReinsert = static_cast<size_t>(0.3 * node->entries.size());
     vector<Rectangle> reinsertEntries;
 
     for (size_t i = 0; i < numReinsert; ++i) {
@@ -286,17 +290,24 @@ void RStarTree::handleOverflow(Node* node) {
         reinsertEntries.push_back(node->entries[index]);
     }
 
-    for (const auto& entry : reinsertEntries) {
-        node->entries.erase(
-            remove(node->entries.begin(), node->entries.end(), entry),
-            node->entries.end()
-        );
-        insert(entry); // Reinsertion
+    // Remove selected entries
+    for (auto& entry : reinsertEntries) {
+        auto it = find(node->entries.begin(), node->entries.end(), entry);
+        if (it != node->entries.end()) 
+            node->entries.erase(it);
     }
 
-    if (node->entries.size() > maxEntries)
-        splitNode(node);
+    // Reinsert selected entries
+    for (size_t i = 0; i < reinsertEntries.size(); ++i) 
+        insert(root, reinsertEntries[i], true); 
+
+    // Adjust bounding rectangle
+    if (node->entries.empty()) 
+        cerr << "Warning: Node became empty after reinsertion!" << endl;
+    else 
+        adjustBoundingRectangle(node);
 }
+
 
 
 void RStarTree::printTree() const {
@@ -309,29 +320,17 @@ void RStarTree::printTree(const Node* node, int depth) const {
     // Print indentation for tree depth
     for (int i = 0; i < depth; ++i) cout << "  ";
 
-    // Print node type
-    if (node->isLeaf) {
-        cout << "Leaf Node: ";
-        for (const auto& rect : node->entries) {
-            cout << "[(";
-            for (float val : rect.minCoords) cout << val << ", ";
-            cout << "), (";
-            for (float val : rect.maxCoords) cout << val << ", ";
-            cout << ")] ";
-        }
-    } else {
-        cout << "Internal Node: ";
-        for (const auto& rect : node->entries) {
-            cout << "[(";
-            for (float val : rect.minCoords) cout << val << ", ";
-            cout << "), (";
-            for (float val : rect.maxCoords) cout << val << ", ";
-            cout << ")] ";
-        }
+    if (node->isLeaf) cout << "Leaf Node: ";
+    else cout << "Internal Node: ";
+    for (const auto& rect : node->entries) {
+        cout << "[(";
+        for (float val : rect.minCoords) cout << val << ", ";
+        cout << "), (";
+        for (float val : rect.maxCoords) cout << val << ", ";
+        cout << ")] ";
     }
     cout << endl;
 
-    // Recursively print children
     if (!node->isLeaf) {
         for (const auto* child : node->children)
             printTree(child, depth + 1);
@@ -349,14 +348,21 @@ vector<Rectangle> RStarTree::rangeQuery(const Rectangle& query) {
 void RStarTree::rangeQuery(Node* node, const Rectangle& query, vector<Rectangle>& results) {
     if (!node) return;
 
+    Rectangle boundingBox = Rectangle::combine(node->entries);
+
     stats.totalNodeVisits++;
     if (node->isLeaf) 
         stats.leafNodeVisits++;
-    else 
+    else
         stats.internalNodeVisits++;
 
     for (size_t i = 0; i < node->entries.size(); ++i) {
-        if (query.overlapCheck(node->entries[i]) > 0) {
+        if (!node->isLeaf)
+            Rectangle childBoundingBox = Rectangle::combine(node->children[i]->entries);
+    }
+
+    for (size_t i = 0; i < node->entries.size(); ++i) {
+        if (query.overlapCheck(node->entries[i])) {
             if (node->isLeaf)
                 results.push_back(node->entries[i]);
             else

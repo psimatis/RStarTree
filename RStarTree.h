@@ -68,11 +68,11 @@ public:
     ~RStarTree();
 
     void insert(const Rectangle& entry);
-    void insert(Node* currentNode, const Rectangle& entry);
+    void insert(Node* currentNode, const Rectangle& entry, bool reinserting);
     void splitNode(Node* node);
     Node* chooseSubtree(Node* currentNode, const Rectangle& entry);
-    void handleOverflow(Node* node);
     void adjustBoundingRectangle(Node* node);
+    void reinsert(Node* node);
 
     vector<Rectangle> rangeQuery(const Rectangle& query);
     void rangeQuery(Node* node, const Rectangle& query, vector<Rectangle>& results);
