@@ -3,9 +3,23 @@
 #include <cstdlib>
 #include <ctime>
 
+
+std::vector<Rectangle> linearRangeQuery(const std::vector<Rectangle>& dataset, const Rectangle& query) {
+    std::vector<Rectangle> results;
+
+    for (const auto& entry : dataset) {
+        // Check if the entry overlaps with the query
+        if (query.overlap(entry)) {
+            results.push_back(entry);
+        }
+    }
+
+    return results;
+}
+
 int main() {
     int dimension = 2;
-    int capacity = 200;
+    int capacity = 3;
 
     RStarTree tree(capacity, dimension);
 
@@ -23,7 +37,7 @@ int main() {
     // }
 
     // Insert randomly generated points
-    for (int i = 0; i < 100000; ++i) {
+    for (int i = 0; i < 100; ++i) {
         float x1 = static_cast<float>(rand() % 10);
         float y1 = static_cast<float>(rand() % 10);
         tree.insert(Rectangle({x1, y1}, {x1, y1}));
@@ -31,23 +45,23 @@ int main() {
     }
 
     // Print tree structure
-    // cout << "R*-Tree Structure:\n";
-    // tree.printTree();
+    cout << "R*-Tree Structure:\n";
+    tree.printTree();
 
     // Perform range query
-    Rectangle query({0, 0}, {8, 8});
-    cout << "\nPerforming Range Query: [(0, 0), (8, 8)]\n";
+    Rectangle query({0, 0}, {1, 1});
+    cout << "\nPerforming Range Query: [(0, 0), (1, 1)]\n";
 
     auto results = tree.rangeQuery(query);
-    cout << "Results size: " << results.size() << endl;
+    cout << "Results size: " << results.size() << endl << endl;
 
-    // for (const auto& rect : results) {
-    //     cout << "Found Rectangle: [(";
-    //     for (float val : rect.minCoords) cout << val << " ";
-    //     cout << "), (";
-    //     for (float val : rect.maxCoords) cout << val << " ";
-    //     cout << ")]\n";
-    // }
+    for (const auto& rect : results) {
+        cout << "Found Rectangle: [(";
+        for (float val : rect.minCoords) cout << val << " ";
+        cout << "), (";
+        for (float val : rect.maxCoords) cout << val << " ";
+        cout << ")]\n";
+    }
 
     TreeStats stats = tree.getStats();
     cout << "\nTree Statistics:\n";

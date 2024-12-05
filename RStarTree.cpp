@@ -68,11 +68,22 @@ bool Rectangle::overlapCheck(const Rectangle& other) const {
 /////////////////////
 Node::Node(bool leaf) : isLeaf(leaf), parent(nullptr) {}
 
+size_t Node::getParentIndex() const {
+    if (!parent)
+        throw runtime_error("Node has no parent.");
+
+    for (size_t i = 0; i < parent->children.size(); ++i) {
+        if (parent->children[i] == this) 
+            return i;
+    }
+
+    throw runtime_error("Node not found in parent's children.");
+}
+
 Node::~Node() {
     for (auto* child : children)
         delete child;
 }
-
 
 /////////////////////
 // RStarTree
@@ -226,13 +237,20 @@ void RStarTree::splitNode(Node* node) {
         parent->children.push_back(newNode);
         parent->entries.push_back(Rectangle::combine(newNode->entries));
         newNode->parent = parent;
-
-        // If the parent overflows, split the parent
-        if (parent->entries.size() > maxEntries) 
-            splitNode(parent);
+        
+        // Adjust parent's bounding box
+        adjustBoundingRectangle(parent);
     }
 }
 
+void RStarTree::adjustBoundingRectangle(Node* node) {
+    if (!node || !node->parent) return;
+
+    size_t index = node->getParentIndex();
+    node->parent->entries[index] = Rectangle::combine(node->entries);
+
+    adjustBoundingRectangle(node->parent);
+}
 
 
 void RStarTree::handleOverflow(Node* node) {
@@ -344,8 +362,8 @@ void RStarTree::rangeQuery(Node* node, const Rectangle& query, vector<Rectangle>
 
 TreeStats RStarTree::getStats() const {
     TreeStats stats;
-    cout << "Capacity: " << maxEntries << endl;
-    cout << "Minimum capacity: " << minEntries << endl;
+    cout << "Max capacity: " << maxEntries << endl;
+    cout << "Min capacity: " << minEntries << endl;
     cout << "Dimensions: " << dimensions << endl;
 
     function<void(const Node*, int)> computeStats = [&](const Node* node, int currentDepth) {

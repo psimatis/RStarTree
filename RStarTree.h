@@ -37,6 +37,7 @@ public:
     Node* parent;
 
     Node(bool leaf);
+    size_t getParentIndex() const;
     ~Node();
 };
 
@@ -68,6 +69,7 @@ public:
     void splitNode(Node* node);
     Node* chooseSubtree(Node* currentNode, const Rectangle& entry);
     void handleOverflow(Node* node);
+    void adjustBoundingRectangle(Node* node);
 
     vector<Rectangle> rangeQuery(const Rectangle& query) const;
     void rangeQuery(Node* node, const Rectangle& query, vector<Rectangle>& results) const;
