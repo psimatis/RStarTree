@@ -72,7 +72,7 @@ public:
     void rangeQueryHelper(Node* node, const Rectangle& query, vector<Rectangle>& results) const;
         
     void printTree() const;
-    void printTree(Node* node, int depth) const;
+    void printTree(const Node* node, int depth) const;
 
     TreeStats getStats() const;
 };

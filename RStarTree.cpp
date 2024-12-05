@@ -214,23 +214,45 @@ void RStarTree::printTree() const {
     printTree(root, 0);
 }
 
-void RStarTree::printTree(Node* node, int depth) const {
+void RStarTree::printTree(const Node* node, int depth) const {
     if (!node) return;
 
-    for (int i = 0; i < depth; ++i) cout << "  ";
-    cout << (node->isLeaf ? "Leaf" : "Internal") << " Node: ";
-    for (const auto& rect : node->entries) {
-        cout << "[(";
-        for (float val : rect.minCoords) cout << val << " ";
-        cout << "), (";
-        for (float val : rect.maxCoords) cout << val << " ";
-        cout << ")] ";
+    // Print indentation for tree depth
+    for (int i = 0; i < depth; ++i) {
+        std::cout << "  ";
     }
-    cout << "\n";
 
-    for (auto* child : node->children)
-        printTree(child, depth + 1);
+    // Print node type
+    if (node->isLeaf) {
+        std::cout << "Leaf Node: ";
+        for (const auto& rect : node->entries) {
+            std::cout << "[(";
+            for (float val : rect.minCoords) std::cout << val << " ";
+            std::cout << "), (";
+            for (float val : rect.maxCoords) std::cout << val << " ";
+            std::cout << ")] ";
+        }
+    } else {
+        std::cout << "Internal Node: ";
+        for (const auto& rect : node->entries) {
+            std::cout << "[(";
+            for (float val : rect.minCoords) std::cout << val << " ";
+            std::cout << "), (";
+            for (float val : rect.maxCoords) std::cout << val << " ";
+            std::cout << ")] ";
+        }
+    }
+
+    std::cout << "\n";
+
+    // Recursively print children
+    if (!node->isLeaf) {
+        for (const auto* child : node->children) {
+            printTree(child, depth + 1);
+        }
+    }
 }
+
 
 vector<Rectangle> RStarTree::rangeQuery(const Rectangle& query) const {
     vector<Rectangle> results;
@@ -239,20 +261,23 @@ vector<Rectangle> RStarTree::rangeQuery(const Rectangle& query) const {
     return results;
 }
 
-void RStarTree::rangeQueryHelper(Node* node, const Rectangle& query, vector<Rectangle>& results) const {
+void RStarTree::rangeQueryHelper(Node* node, const Rectangle& query, std::vector<Rectangle>& results) const {
     if (!node) return;
 
-    for (const auto& entry : node->entries) {
-        if (query.overlap(entry) > 0) { // Check for overlap
-            if (node->isLeaf)
-                results.push_back(entry);
-            else {
-                for (Node* child : node->children)
-                    rangeQueryHelper(child, query, results);
+    // Check all entries in the current node
+    for (size_t i = 0; i < node->entries.size(); ++i) {
+        if (query.overlap(node->entries[i]) > 0) { // Overlap check
+            if (node->isLeaf) {
+                // Add data rectangle if it's a leaf node
+                results.push_back(node->entries[i]);
+            } else {
+                // Recurse into the child node
+                rangeQueryHelper(node->children[i], query, results);
             }
         }
     }
 }
+
 
 float Rectangle::overlap(const Rectangle& other) const {
     for (size_t i = 0; i < minCoords.size(); ++i) {

@@ -20,10 +20,11 @@ int main() {
     // }
 
     // Insert randomly generated points
-    for (int i = 0; i < 10; ++i) {
+    for (int i = 0; i < 1000; ++i) {
         float x1 = static_cast<float>(rand() % 10);
         float y1 = static_cast<float>(rand() % 10);
         tree.insert(Rectangle({x1, y1}, {x1, y1}));
+        cout << "Inserted Rectangle: [(" << x1 << ", " << y1 << "), (" << x1 << ", " << y1 << ")]" << endl;
     }
 
     // Print tree structure
