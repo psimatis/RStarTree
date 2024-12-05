@@ -4,7 +4,7 @@
 #include <ctime>
 
 int main() {
-    RStarTree tree(30, 20);
+    RStarTree tree(4, 2);
 
     // Seed for random number generation
     srand(time(nullptr));
@@ -20,7 +20,7 @@ int main() {
     // }
 
     // Insert randomly generated points
-    for (int i = 0; i < 1000; ++i) {
+    for (int i = 0; i < 20000; ++i) {
         float x1 = static_cast<float>(rand() % 10);
         float y1 = static_cast<float>(rand() % 10);
         tree.insert(Rectangle({x1, y1}, {x1, y1}));

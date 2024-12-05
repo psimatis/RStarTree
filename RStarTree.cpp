@@ -76,13 +76,13 @@ void RStarTree::insert(Node* currentNode, const Rectangle& entry) {
 }
 
 Node* RStarTree::chooseSubtree(Node* currentNode, const Rectangle& entry) {
-    if (currentNode->isLeaf) {
-        cerr << "Error: chooseSubtree called on a leaf node!" << endl;
+    if (!currentNode || currentNode->isLeaf) {
+        std::cerr << "Error: chooseSubtree called on an invalid or leaf node!" << std::endl;
         return nullptr;
     }
 
     Node* bestChild = nullptr;
-    float minAreaIncrease = numeric_limits<float>::max();
+    float minAreaIncrease = std::numeric_limits<float>::max();
 
     for (size_t i = 0; i < currentNode->entries.size(); ++i) {
         Rectangle combined = currentNode->entries[i].combine(entry);
@@ -94,11 +94,13 @@ Node* RStarTree::chooseSubtree(Node* currentNode, const Rectangle& entry) {
         }
     }
 
-    if (!bestChild)
-        cerr << "Error: No valid subtree found in chooseSubtree!" << endl;
+    if (!bestChild) {
+        std::cerr << "Error: No valid subtree found in chooseSubtree!" << std::endl;
+    }
 
     return bestChild;
 }
+
 
 Rectangle RStarTree::computeBoundingRectangle(Node* node) const {
     vector<float> minCoords(dimensions, numeric_limits<float>::max());
@@ -116,66 +118,30 @@ Rectangle RStarTree::computeBoundingRectangle(Node* node) const {
 
 void RStarTree::splitNode(Node* node) {
     if (!node || node->entries.empty()) {
-        cerr << "Error: Invalid node in splitNode!" << endl;
+        std::cerr << "Error: Invalid node in splitNode!" << std::endl;
         return;
     }
 
     Node* newNode = new Node(node->isLeaf);
+    size_t splitIndex = node->entries.size() / 2;
 
-    // Optimal Seed Picking: Find the pair of entries farthest apart
-    size_t bestSeed1 = 0, bestSeed2 = 1;
-    float maxSeparation = -1.0f;
-
-    for (size_t i = 0; i < node->entries.size(); ++i) {
-        for (size_t j = i + 1; j < node->entries.size(); ++j) {
-            Rectangle combined = node->entries[i].combine(node->entries[j]);
-            float separation = combined.area() - node->entries[i].area() - node->entries[j].area();
-            if (separation > maxSeparation) {
-                maxSeparation = separation;
-                bestSeed1 = i;
-                bestSeed2 = j;
-            }
-        }
-    }
-
-    // Move the seeds to separate nodes
-    newNode->entries.push_back(node->entries[bestSeed2]);
-    node->entries.erase(node->entries.begin() + bestSeed2);
-
-    newNode->entries.push_back(node->entries[bestSeed1]);
-    node->entries.erase(node->entries.begin() + bestSeed1);
-
-    if (!node->isLeaf) {
-        newNode->children.push_back(node->children[bestSeed2]);
-        newNode->children.back()->parent = newNode;
-        node->children.erase(node->children.begin() + bestSeed2);
-
-        newNode->children.push_back(node->children[bestSeed1]);
-        newNode->children.back()->parent = newNode;
-        node->children.erase(node->children.begin() + bestSeed1);
-    }
-
-    // Distribute remaining entries
-    for (const auto& entry : node->entries) {
-        Rectangle combined1 = computeBoundingRectangle(node).combine(entry);
-        Rectangle combined2 = computeBoundingRectangle(newNode).combine(entry);
-
-        if (combined1.area() < combined2.area())
-            node->entries.push_back(entry);
-        else
-            newNode->entries.push_back(entry);
-    }
-
-    if (!node->isLeaf) {
-        for (size_t i = 0; i < node->children.size(); ++i) {
+    // Move half of the entries and children to the new node
+    for (size_t i = splitIndex; i < node->entries.size(); ++i) {
+        newNode->entries.push_back(node->entries[i]);
+        if (!node->isLeaf) {
             newNode->children.push_back(node->children[i]);
             newNode->children.back()->parent = newNode;
         }
-        node->children.clear();
     }
 
-    // Update parent node
+    node->entries.resize(splitIndex);
+    if (!node->isLeaf) {
+        node->children.resize(splitIndex);
+    }
+
+    // Update the parent node
     if (!node->parent) {
+        // Create a new root if splitting the root
         root = new Node(false);
         root->children.push_back(node);
         root->children.push_back(newNode);
@@ -190,13 +156,12 @@ void RStarTree::splitNode(Node* node) {
         newNode->parent = parent;
 
         // If the parent overflows, split the parent
-        if (parent->entries.size() > maxEntries)
+        if (parent->entries.size() > maxEntries) {
             splitNode(parent);
+        }
     }
-
-    // Clear node entries after splitting
-    node->entries.clear();
 }
+
 
 void RStarTree::handleOverflow(Node* node) {
     if (!node || node->entries.size() <= maxEntries) return;
