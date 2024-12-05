@@ -1,11 +1,15 @@
 #include "RStarTree.h"
 
+/////////////////////
+// Rectangle
+/////////////////////
 Rectangle::Rectangle(int dimensions)
     : minCoords(dimensions, numeric_limits<float>::max()),
       maxCoords(dimensions, numeric_limits<float>::lowest()) {}
 
 Rectangle::Rectangle(const vector<float>& min, const vector<float>& max)
     : minCoords(min), maxCoords(max) {}
+
 
 float Rectangle::area() const {
     float result = 1.0f;
@@ -24,23 +28,21 @@ Rectangle Rectangle::combine(const Rectangle& other) const {
     return Rectangle(newMin, newMax);
 }
 
-bool Rectangle::contains(const Rectangle& other) const {
-    for (size_t i = 0; i < minCoords.size(); ++i) {
-        if (minCoords[i] > other.minCoords[i] || maxCoords[i] < other.maxCoords[i])
-            return false;
-    }
-    return true;
-}
 
-// Node Implementation
-RStarTree::Node::Node(bool leaf) : isLeaf(leaf), parent(nullptr) {}
+/////////////////////
+// Node
+/////////////////////
+Node::Node(bool leaf) : isLeaf(leaf), parent(nullptr) {}
 
-RStarTree::Node::~Node() {
+Node::~Node() {
     for (auto* child : children)
         delete child;
 }
 
-// RStarTree Implementation
+
+/////////////////////
+// RStarTree
+////////////////////
 RStarTree::RStarTree(int maxEntries, int dimensions)
     : maxEntries(maxEntries), minEntries(maxEntries / 2), dimensions(dimensions) {
     root = new Node(true);
@@ -73,7 +75,7 @@ void RStarTree::insert(Node* currentNode, const Rectangle& entry) {
     }
 }
 
-RStarTree::Node* RStarTree::chooseSubtree(Node* currentNode, const Rectangle& entry) {
+Node* RStarTree::chooseSubtree(Node* currentNode, const Rectangle& entry) {
     if (currentNode->isLeaf) {
         cerr << "Error: chooseSubtree called on a leaf node!" << endl;
         return nullptr;

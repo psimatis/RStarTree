@@ -7,10 +7,10 @@
 #include <iostream>
 #include <cmath>
 
-
 using namespace std;
 
-struct Rectangle {
+class Rectangle {
+public:
     vector<float> minCoords, maxCoords;
 
     Rectangle() = default;
@@ -20,42 +20,44 @@ struct Rectangle {
     float area() const;
     float overlap(const Rectangle& other) const;
     Rectangle combine(const Rectangle& other) const;
-    bool contains(const Rectangle& other) const;
-
+    
     bool operator==(const Rectangle& other) const {
         return minCoords == other.minCoords && maxCoords == other.maxCoords;
     }
 };
 
-class RStarTree {
+class Node {
 public:
-    struct Node {
-        bool isLeaf;
-        vector<Rectangle> entries;
-        vector<Node*> children;
-        Node* parent;
+    bool isLeaf;
+    vector<Rectangle> entries;
+    vector<Node*> children;
+    Node* parent;
 
-        Node(bool leaf);
-        ~Node();
-    };
+    Node(bool leaf);
+    ~Node();
+};
 
+class RStarTree {
+private:
     Node* root;
     int maxEntries;
     int minEntries;
     int dimensions;
 
-    void insert(Node* currentNode, const Rectangle& entry);
-    void splitNode(Node* node);
-    Node* chooseSubtree(Node* currentNode, const Rectangle& entry);
-    void rangeQueryHelper(Node* node, const Rectangle& query, vector<Rectangle>& results) const;
-    Rectangle computeBoundingRectangle(Node* node) const;
-    void handleOverflow(Node* node);
-
+public:
     RStarTree(int maxEntries, int dimensions);
     ~RStarTree();
 
     void insert(const Rectangle& entry);
+    void insert(Node* currentNode, const Rectangle& entry);
+    void splitNode(Node* node);
+    Node* chooseSubtree(Node* currentNode, const Rectangle& entry);
+    Rectangle computeBoundingRectangle(Node* node) const;
+    void handleOverflow(Node* node);
+
     vector<Rectangle> rangeQuery(const Rectangle& query) const;
+    void rangeQueryHelper(Node* node, const Rectangle& query, vector<Rectangle>& results) const;
+        
     void printTree() const;
     void printTree(Node* node, int depth) const;
 };
