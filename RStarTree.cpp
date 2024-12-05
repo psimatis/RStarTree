@@ -10,6 +10,14 @@ Rectangle::Rectangle(int dimensions)
 Rectangle::Rectangle(const vector<float>& min, const vector<float>& max)
     : minCoords(min), maxCoords(max) {}
 
+void Rectangle::printRectangle(const string& label) const {
+    cout << label << " [";
+    for (size_t i = 0; i < minCoords.size(); ++i) {
+        cout << "(" << minCoords[i] << ", " << maxCoords[i] << ")";
+        if (i < minCoords.size() - 1) cout << ", ";
+    }
+    cout << "]" << endl;
+}
 
 float Rectangle::area() const {
     float result = 1.0f;
@@ -23,8 +31,8 @@ float Rectangle::overlap(const Rectangle& other) const {
 
     for (size_t i = 0; i < minCoords.size(); ++i) {
         // Calculate the overlap in the current dimension
-        float overlapMin = std::max(minCoords[i], other.minCoords[i]);
-        float overlapMax = std::min(maxCoords[i], other.maxCoords[i]);
+        float overlapMin = max(minCoords[i], other.minCoords[i]);
+        float overlapMax = min(maxCoords[i], other.maxCoords[i]);
 
         if (overlapMax < overlapMin) {
             // No overlap in this dimension
@@ -50,14 +58,15 @@ Rectangle Rectangle::combine(const vector<Rectangle>& rectangles) {
             combinedMax[i] = max(combinedMax[i], rect.maxCoords[i]);
         }
     }
-
     return Rectangle(combinedMin, combinedMax);
 }
 
+
 bool Rectangle::overlapCheck(const Rectangle& other) const {
-    for (size_t i = 0; i < minCoords.size(); ++i) {
-        if (maxCoords[i] < other.minCoords[i] || minCoords[i] > other.maxCoords[i])
+    for (size_t i = 0; i < maxCoords.size(); ++i) {
+        if (other.minCoords[i] > maxCoords[i] || other.maxCoords[i] < minCoords[i]) {
             return false;
+        }
     }
     return true; 
 }
@@ -68,22 +77,11 @@ bool Rectangle::overlapCheck(const Rectangle& other) const {
 /////////////////////
 Node::Node(bool leaf) : isLeaf(leaf), parent(nullptr) {}
 
-size_t Node::getParentIndex() const {
-    if (!parent)
-        throw runtime_error("Node has no parent.");
-
-    for (size_t i = 0; i < parent->children.size(); ++i) {
-        if (parent->children[i] == this) 
-            return i;
-    }
-
-    throw runtime_error("Node not found in parent's children.");
-}
-
 Node::~Node() {
     for (auto* child : children)
         delete child;
 }
+
 
 /////////////////////
 // RStarTree
@@ -98,33 +96,7 @@ RStarTree::~RStarTree() {
 }
 
 void RStarTree::insert(const Rectangle& entry) {
-    insert(root, entry, false);
-}
-
-
-void RStarTree::insert(Node* node, const Rectangle& entry, bool reinserting) {
-    if (!node) {
-        cerr << "Error: currentNode is null!" << endl;
-        return;
-    }
-
-    if (node->isLeaf) {
-        node->entries.push_back(entry);
-
-        if (node->entries.size() > maxEntries){
-            // Reinsert 30% of the entries
-            if (reinserting == false) reinsert(node);
-
-            // If the node still overflows after reinsertion, split it
-            if (node->entries.size() > maxEntries) splitNode(node);
-        }
-    } else {
-        Node* subtree = chooseSubtree(node, entry);
-        if (subtree)
-            insert(subtree, entry, reinserting);
-        else
-            cerr << "Error: No valid subtree found!" << endl;
-    }
+    insert(root, entry);
 }
 
 Node* RStarTree::chooseSubtree(Node* currentNode, const Rectangle& entry) {
@@ -150,6 +122,25 @@ Node* RStarTree::chooseSubtree(Node* currentNode, const Rectangle& entry) {
         cerr << "Error: No valid subtree found in chooseSubtree!" << endl;
 
     return bestChild;
+}
+
+void RStarTree::insert(Node* currentNode, const Rectangle& entry) {
+    if (!currentNode) {
+        cerr << "Error: currentNode is null!" << endl;
+        return;
+    }
+
+    if (currentNode->isLeaf) {
+        currentNode->entries.push_back(entry);
+        if (currentNode->entries.size() > maxEntries)
+            splitNode(currentNode);
+    } else {
+        Node* subtree = chooseSubtree(currentNode, entry);
+        if (subtree)
+            insert(subtree, entry);
+        else 
+            cerr << "Error: No valid subtree found!" << endl;
+    }
 }
 
 void RStarTree::splitNode(Node* node) {
@@ -243,71 +234,12 @@ void RStarTree::splitNode(Node* node) {
         parent->children.push_back(newNode);
         parent->entries.push_back(Rectangle::combine(newNode->entries));
         newNode->parent = parent;
-        
-        // Adjust parent's bounding box
-        adjustBoundingRectangle(parent);
+
+        // If the parent overflows, split the parent
+        if (parent->entries.size() > maxEntries) 
+            splitNode(parent);
     }
 }
-
-void RStarTree::adjustBoundingRectangle(Node* node) {
-    if (!node || !node->parent) return;
-
-    size_t index = node->getParentIndex();
-    node->parent->entries[index] = Rectangle::combine(node->entries);
-
-    adjustBoundingRectangle(node->parent);
-}
-
-
-void RStarTree::reinsert(Node* node) {
-    size_t numReinsert = static_cast<size_t>(ceil(0.3 * node->entries.size()));
-
-    if (numReinsert == 0) return;
-
-    // Compute the center of the bounding rectangle
-    Rectangle boundingRect = Rectangle::combine(node->entries);
-    vector<float> center(dimensions);
-    for (size_t i = 0; i < dimensions; ++i) 
-        center[i] = (boundingRect.minCoords[i] + boundingRect.maxCoords[i]) / 2.0f;
-
-    // Sort entries by distance from the center
-    vector<pair<float, size_t>> distances;
-    for (size_t i = 0; i < node->entries.size(); ++i) {
-        float distance = 0.0f;
-        for (size_t j = 0; j < dimensions; ++j) {
-            float diff = (node->entries[i].minCoords[j] + node->entries[i].maxCoords[j]) / 2.0f - center[j];
-            distance += diff * diff;
-        }
-        distances.emplace_back(distance, i);
-    }
-
-    sort(distances.rbegin(), distances.rend()); // Sort in descending order
-
-    vector<Rectangle> reinsertEntries;
-
-    for (size_t i = 0; i < numReinsert; ++i) {
-        size_t index = distances[i].second;
-        reinsertEntries.push_back(node->entries[index]);
-    }
-
-    // Remove selected entries
-    for (auto& entry : reinsertEntries) {
-        auto it = find(node->entries.begin(), node->entries.end(), entry);
-        if (it != node->entries.end()) 
-            node->entries.erase(it);
-    }
-
-    // Reinsert selected entries
-    for (size_t i = 0; i < reinsertEntries.size(); ++i) 
-        insert(root, reinsertEntries[i], true); 
-
-    // Adjust bounding rectangle
-    if (node->entries.empty()) 
-        cerr << "Warning: Node became empty after reinsertion!" << endl;
-    else 
-        adjustBoundingRectangle(node);
-}
-
 
 
 void RStarTree::printTree() const {
@@ -320,17 +252,29 @@ void RStarTree::printTree(const Node* node, int depth) const {
     // Print indentation for tree depth
     for (int i = 0; i < depth; ++i) cout << "  ";
 
-    if (node->isLeaf) cout << "Leaf Node: ";
-    else cout << "Internal Node: ";
-    for (const auto& rect : node->entries) {
-        cout << "[(";
-        for (float val : rect.minCoords) cout << val << ", ";
-        cout << "), (";
-        for (float val : rect.maxCoords) cout << val << ", ";
-        cout << ")] ";
+    // Print node type
+    if (node->isLeaf) {
+        cout << "Leaf Node: ";
+        for (const auto& rect : node->entries) {
+            cout << "[(";
+            for (float val : rect.minCoords) cout << val << ", ";
+            cout << "), (";
+            for (float val : rect.maxCoords) cout << val << ", ";
+            cout << ")] ";
+        }
+    } else {
+        cout << "Internal Node: ";
+        for (const auto& rect : node->entries) {
+            cout << "[(";
+            for (float val : rect.minCoords) cout << val << ", ";
+            cout << "), (";
+            for (float val : rect.maxCoords) cout << val << ", ";
+            cout << ")] ";
+        }
     }
     cout << endl;
 
+    // Recursively print children
     if (!node->isLeaf) {
         for (const auto* child : node->children)
             printTree(child, depth + 1);
@@ -338,7 +282,7 @@ void RStarTree::printTree(const Node* node, int depth) const {
 }
 
 
-vector<Rectangle> RStarTree::rangeQuery(const Rectangle& query) {
+vector<Rectangle> RStarTree::rangeQuery(const Rectangle& query){
     vector<Rectangle> results;
     if (root) 
         rangeQuery(root, query, results);
@@ -346,35 +290,37 @@ vector<Rectangle> RStarTree::rangeQuery(const Rectangle& query) {
 }
 
 void RStarTree::rangeQuery(Node* node, const Rectangle& query, vector<Rectangle>& results) {
-    if (!node) return;
+    if (!node)
+        return;
 
-    Rectangle boundingBox = Rectangle::combine(node->entries);
-
-    stats.totalNodeVisits++;
-    if (node->isLeaf) 
-        stats.leafNodeVisits++;
-    else
-        stats.internalNodeVisits++;
+    // cout << "Processing node at depth " << (node->isLeaf ? "Leaf" : "Internal") << endl;
 
     for (size_t i = 0; i < node->entries.size(); ++i) {
-        if (!node->isLeaf)
-            Rectangle childBoundingBox = Rectangle::combine(node->children[i]->entries);
-    }
-
-    for (size_t i = 0; i < node->entries.size(); ++i) {
-        if (query.overlapCheck(node->entries[i])) {
-            if (node->isLeaf)
-                results.push_back(node->entries[i]);
-            else
+        const Rectangle& currentEntry = node->entries[i];
+        if (query.overlapCheck(currentEntry)) {
+            // cout << "Overlap found with query!" << endl;
+            if (node->isLeaf) {
+                // cout << "Adding to results" << endl;
+                results.push_back(currentEntry);
+            } else {
+                // cout << "Descending into child node." << endl;
                 rangeQuery(node->children[i], query, results);
+            }
+        } else {
+            // cout << "No overlap with query." << endl;
         }
+        // cout << "----------------------------------" << endl;
     }
+
+    // cout << "Finished processing node." << endl;
 }
 
 
+
 TreeStats RStarTree::getStats() {
-    cout << "Max capacity: " << maxEntries << endl;
-    cout << "Min capacity: " << minEntries << endl;
+    TreeStats stats;
+    cout << "Capacity: " << maxEntries << endl;
+    cout << "Minimum capacity: " << minEntries << endl;
     cout << "Dimensions: " << dimensions << endl;
 
     function<void(const Node*, int)> computeStats = [&](const Node* node, size_t currentDepth) {

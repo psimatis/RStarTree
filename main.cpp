@@ -9,8 +9,8 @@ using namespace std::chrono;
 
 int main() {
     int dimension = 2;
-    int capacity = 32;
-    int numData = 10000;
+    int capacity = 100;
+    int numData = 100;
 
     RStarTree tree(capacity, dimension);
 
@@ -18,7 +18,7 @@ int main() {
 
     // Insert points
     const int minRange = 0;
-    const int maxRange = 1000; 
+    const int maxRange = 100; 
     auto start = high_resolution_clock::now();
     for (int i = 0; i < numData; ++i) {
         float x1 = static_cast<float>(minRange + rand() % (maxRange - minRange + 1));
@@ -31,12 +31,12 @@ int main() {
 
 
     // Print tree structure
-    // cout << "R*-Tree Structure:\n";
-    // tree.printTree();
+    cout << "R*-Tree Structure:\n";
+    tree.printTree();
 
     // Perform range query
     start = high_resolution_clock::now();
-    Rectangle query({static_cast<float>(minRange)}, {static_cast<float>(minRange + 10)});
+    Rectangle query({static_cast<float>(minRange), static_cast<float>(minRange)}, {static_cast<float>(minRange + 10), static_cast<float>(minRange + 10)});
     auto durationQuery = duration_cast<milliseconds>(high_resolution_clock::now() - start);
     cout << "Range query took: " << durationQuery.count() << " ms" << endl;
     cout << "\nPerforming Range Query: [(" << minRange << ", " << minRange << "), (" << minRange + 10 << ", " << minRange + 10 << ")]\n";
@@ -44,13 +44,13 @@ int main() {
     auto results = tree.rangeQuery(query);
     cout << "Results size: " << results.size() << endl << endl;
 
-    // for (const auto& rect : results) {
-    //     cout << "Found Rectangle: [(";
-    //     for (float val : rect.minCoords) cout << val << " ";
-    //     cout << "), (";
-    //     for (float val : rect.maxCoords) cout << val << " ";
-    //     cout << ")]\n";
-    // }
+    for (const auto& rect : results) {
+        cout << "Found Rectangle: [(";
+        for (float val : rect.minCoords) cout << val << " ";
+        cout << "), (";
+        for (float val : rect.maxCoords) cout << val << " ";
+        cout << ")]\n";
+    }
 
     TreeStats stats = tree.getStats();
     cout << "Tree Statistics" << endl;

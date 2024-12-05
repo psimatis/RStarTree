@@ -18,6 +18,7 @@ public:
     Rectangle(int dimensions);
     Rectangle(const vector<float>& min, const vector<float>& max);
 
+    void printRectangle(const string& label) const;
     float area() const;
     bool overlapCheck(const Rectangle& other) const;
     float overlap(const Rectangle& other) const;
@@ -68,11 +69,13 @@ public:
     ~RStarTree();
 
     void insert(const Rectangle& entry);
+    void insert(Node* currentNode, const Rectangle& entry);
     void insert(Node* currentNode, const Rectangle& entry, bool reinserting);
     void splitNode(Node* node);
     Node* chooseSubtree(Node* currentNode, const Rectangle& entry);
     void adjustBoundingRectangle(Node* node);
     void reinsert(Node* node);
+    Node* chooseLeaf(Node* currentNode, const Rectangle& entry);
 
     vector<Rectangle> rangeQuery(const Rectangle& query);
     void rangeQuery(Node* node, const Rectangle& query, vector<Rectangle>& results);
