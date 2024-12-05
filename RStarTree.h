@@ -19,8 +19,9 @@ public:
     Rectangle(const vector<float>& min, const vector<float>& max);
 
     float area() const;
-    float overlap(const Rectangle& other) const;
-    Rectangle combine(const Rectangle& other) const;
+    bool overlap(const Rectangle& other) const;
+
+    static Rectangle combine(const vector<Rectangle>& rectangles);
     
     bool operator==(const Rectangle& other) const {
         return minCoords == other.minCoords && maxCoords == other.maxCoords;
@@ -65,11 +66,10 @@ public:
     void insert(Node* currentNode, const Rectangle& entry);
     void splitNode(Node* node);
     Node* chooseSubtree(Node* currentNode, const Rectangle& entry);
-    Rectangle computeBoundingRectangle(Node* node) const;
     void handleOverflow(Node* node);
 
     vector<Rectangle> rangeQuery(const Rectangle& query) const;
-    void rangeQueryHelper(Node* node, const Rectangle& query, vector<Rectangle>& results) const;
+    void rangeQuery(Node* node, const Rectangle& query, vector<Rectangle>& results) const;
         
     void printTree() const;
     void printTree(const Node* node, int depth) const;

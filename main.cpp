@@ -4,7 +4,7 @@
 #include <ctime>
 
 int main() {
-    RStarTree tree(4, 2);
+    RStarTree tree(500, 2);
 
     // Seed for random number generation
     srand(time(nullptr));
@@ -20,7 +20,7 @@ int main() {
     // }
 
     // Insert randomly generated points
-    for (int i = 0; i < 1000; ++i) {
+    for (int i = 0; i < 2000; ++i) {
         float x1 = static_cast<float>(rand() % 10);
         float y1 = static_cast<float>(rand() % 10);
         tree.insert(Rectangle({x1, y1}, {x1, y1}));
@@ -38,13 +38,13 @@ int main() {
     auto results = tree.rangeQuery(query);
     cout << "Results size: " << results.size() << endl;
 
-    for (const auto& rect : results) {
-        cout << "Found Rectangle: [(";
-        for (float val : rect.minCoords) cout << val << " ";
-        cout << "), (";
-        for (float val : rect.maxCoords) cout << val << " ";
-        cout << ")]\n";
-    }
+    // for (const auto& rect : results) {
+    //     cout << "Found Rectangle: [(";
+    //     for (float val : rect.minCoords) cout << val << " ";
+    //     cout << "), (";
+    //     for (float val : rect.maxCoords) cout << val << " ";
+    //     cout << ")]\n";
+    // }
 
     TreeStats stats = tree.getStats();
     cout << "\nTree Statistics:\n";
