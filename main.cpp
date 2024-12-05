@@ -4,12 +4,15 @@
 #include <ctime>
 
 int main() {
-    RStarTree tree(500, 2);
+    int dimension = 2;
+    int capacity = 200;
 
-    // Seed for random number generation
-    srand(time(nullptr));
+    RStarTree tree(capacity, dimension);
 
-    // // Insert randomly generated rectangles
+    // srand(time(nullptr));
+    srand(0);
+
+    // // Insert rectangles
     // for (int i = 0; i < 10; ++i) {
     //     float x1 = static_cast<float>(rand() % 100) / 10.0f;
     //     float y1 = static_cast<float>(rand() % 100) / 10.0f;
@@ -20,16 +23,16 @@ int main() {
     // }
 
     // Insert randomly generated points
-    for (int i = 0; i < 2000; ++i) {
+    for (int i = 0; i < 100000; ++i) {
         float x1 = static_cast<float>(rand() % 10);
         float y1 = static_cast<float>(rand() % 10);
         tree.insert(Rectangle({x1, y1}, {x1, y1}));
-        cout << "Inserted Rectangle: [(" << x1 << ", " << y1 << "), (" << x1 << ", " << y1 << ")]" << endl;
+        // cout << "Inserted Rectangle: [(" << x1 << ", " << y1 << "), (" << x1 << ", " << y1 << ")]" << endl;
     }
 
     // Print tree structure
-    cout << "R*-Tree Structure:\n";
-    tree.printTree();
+    // cout << "R*-Tree Structure:\n";
+    // tree.printTree();
 
     // Perform range query
     Rectangle query({0, 0}, {8, 8});

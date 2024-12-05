@@ -19,7 +19,8 @@ public:
     Rectangle(const vector<float>& min, const vector<float>& max);
 
     float area() const;
-    bool overlap(const Rectangle& other) const;
+    bool overlapCheck(const Rectangle& other) const;
+    float overlap(const Rectangle& other) const;
 
     static Rectangle combine(const vector<Rectangle>& rectangles);
     
