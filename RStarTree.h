@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <iostream>
 #include <cmath>
+#include <functional> 
 
 using namespace std;
 
@@ -37,12 +38,24 @@ public:
     ~Node();
 };
 
+
+struct TreeStats {
+    int totalNodes = 0;
+    int leafNodes = 0;
+    int internalNodes = 0;
+    int totalDataEntries = 0;
+    int height = 0;
+};
+
+
 class RStarTree {
 private:
     Node* root;
     int maxEntries;
     int minEntries;
     int dimensions;
+
+    struct TreeStats stats;
 
 public:
     RStarTree(int maxEntries, int dimensions);
@@ -60,6 +73,8 @@ public:
         
     void printTree() const;
     void printTree(Node* node, int depth) const;
+
+    TreeStats getStats() const;
 };
 
 #endif // RSTARTREE_H

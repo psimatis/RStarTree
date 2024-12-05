@@ -263,3 +263,27 @@ float Rectangle::overlap(const Rectangle& other) const {
     }
     return 1.0f; // Overlap exists
 }
+
+TreeStats RStarTree::getStats() const {
+    TreeStats stats;
+
+    std::function<void(const Node*, int)> computeStats = [&](const Node* node, int currentDepth) {
+        if (!node) return;
+
+        stats.totalNodes++;
+        if (node->isLeaf) {
+            stats.leafNodes++;
+            stats.totalDataEntries += node->entries.size();
+        } else {
+            stats.internalNodes++;
+            for (const auto* child : node->children) {
+                computeStats(child, currentDepth + 1);
+            }
+        }
+
+        stats.height = std::max(stats.height, currentDepth);
+    };
+
+    computeStats(root, 1); // Start with the root node and depth 1
+    return stats;
+}

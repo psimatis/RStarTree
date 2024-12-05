@@ -20,7 +20,7 @@ int main() {
     // }
 
     // Insert randomly generated points
-    for (int i = 0; i < 20000; ++i) {
+    for (int i = 0; i < 10; ++i) {
         float x1 = static_cast<float>(rand() % 10);
         float y1 = static_cast<float>(rand() % 10);
         tree.insert(Rectangle({x1, y1}, {x1, y1}));
@@ -37,13 +37,21 @@ int main() {
     auto results = tree.rangeQuery(query);
     cout << "Results size: " << results.size() << endl;
 
-    // for (const auto& rect : results) {
-    //     cout << "Found Rectangle: [(";
-    //     for (float val : rect.minCoords) cout << val << " ";
-    //     cout << "), (";
-    //     for (float val : rect.maxCoords) cout << val << " ";
-    //     cout << ")]\n";
-    // }
+    for (const auto& rect : results) {
+        cout << "Found Rectangle: [(";
+        for (float val : rect.minCoords) cout << val << " ";
+        cout << "), (";
+        for (float val : rect.maxCoords) cout << val << " ";
+        cout << ")]\n";
+    }
+
+    TreeStats stats = tree.getStats();
+    cout << "\nTree Statistics:\n";
+    cout << "Total Nodes: " << stats.totalNodes << "\n";
+    cout << "Leaf Nodes: " << stats.leafNodes << "\n";
+    cout << "Internal Nodes: " << stats.internalNodes << "\n";
+    cout << "Total Data Entries: " << stats.totalDataEntries << "\n";
+    cout << "Tree Height: " << stats.height << "\n";
 
     return 0;
 }
