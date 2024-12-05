@@ -43,11 +43,14 @@ public:
 
 
 struct TreeStats {
-    int totalNodes = 0;
-    int leafNodes = 0;
-    int internalNodes = 0;
-    int totalDataEntries = 0;
-    int height = 0;
+    size_t totalNodes = 0;
+    size_t leafNodes = 0;
+    size_t internalNodes = 0;
+    size_t totalDataEntries = 0;
+    size_t height = 0;
+    size_t leafNodeVisits = 0;
+    size_t internalNodeVisits = 0;
+    size_t totalNodeVisits = 0;
 };
 
 
@@ -71,13 +74,13 @@ public:
     void handleOverflow(Node* node);
     void adjustBoundingRectangle(Node* node);
 
-    vector<Rectangle> rangeQuery(const Rectangle& query) const;
-    void rangeQuery(Node* node, const Rectangle& query, vector<Rectangle>& results) const;
+    vector<Rectangle> rangeQuery(const Rectangle& query);
+    void rangeQuery(Node* node, const Rectangle& query, vector<Rectangle>& results);
         
     void printTree() const;
     void printTree(const Node* node, int depth) const;
 
-    TreeStats getStats() const;
+    TreeStats getStats();
 };
 
 #endif // RSTARTREE_H

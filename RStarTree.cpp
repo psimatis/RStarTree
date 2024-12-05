@@ -339,15 +339,21 @@ void RStarTree::printTree(const Node* node, int depth) const {
 }
 
 
-vector<Rectangle> RStarTree::rangeQuery(const Rectangle& query) const {
+vector<Rectangle> RStarTree::rangeQuery(const Rectangle& query) {
     vector<Rectangle> results;
     if (root) 
         rangeQuery(root, query, results);
     return results;
 }
 
-void RStarTree::rangeQuery(Node* node, const Rectangle& query, vector<Rectangle>& results) const {
+void RStarTree::rangeQuery(Node* node, const Rectangle& query, vector<Rectangle>& results) {
     if (!node) return;
+
+    stats.totalNodeVisits++;
+    if (node->isLeaf) 
+        stats.leafNodeVisits++;
+    else 
+        stats.internalNodeVisits++;
 
     for (size_t i = 0; i < node->entries.size(); ++i) {
         if (query.overlapCheck(node->entries[i]) > 0) {
@@ -360,13 +366,12 @@ void RStarTree::rangeQuery(Node* node, const Rectangle& query, vector<Rectangle>
 }
 
 
-TreeStats RStarTree::getStats() const {
-    TreeStats stats;
+TreeStats RStarTree::getStats() {
     cout << "Max capacity: " << maxEntries << endl;
     cout << "Min capacity: " << minEntries << endl;
     cout << "Dimensions: " << dimensions << endl;
 
-    function<void(const Node*, int)> computeStats = [&](const Node* node, int currentDepth) {
+    function<void(const Node*, int)> computeStats = [&](const Node* node, size_t currentDepth) {
         if (!node) return;
 
         stats.totalNodes++;
