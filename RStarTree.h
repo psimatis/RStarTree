@@ -42,6 +42,8 @@ public:
     Node* parent;
 
     Node(bool leaf);
+    Node(const vector<Rectangle>& entries);
+    
     ~Node();
 };
 
@@ -74,6 +76,11 @@ public:
     void insert(const Rectangle& entry);
     void insert(Node* currentNode, const Rectangle& entry, bool allowReinsertion);
     void reinsert(Node* node);
+    void batchInsert(Node* newNode);
+    void batchInsert(Node* currentNode, Node* newNode, bool allowReinsertion);
+
+    Node* chooseSubtree(Node* currentNode, const Rectangle& entry);
+    Node* chooseSubtreeBatch(Node* currentNode, const Rectangle& entry);
 
     void splitNode(Node* node);
 
@@ -81,13 +88,10 @@ public:
     void sortEntriesAndChildren(Node* node, const vector<Rectangle>& sortedEntries, vector<size_t>& sortedIndices, int bestAxis);
     void updateRectangles(Node* node);
 
-    Node* chooseSubtree(Node* currentNode, const Rectangle& entry);
-
     vector<Rectangle> rangeQuery(const Rectangle& query);
     void rangeQuery(Node* node, const Rectangle& query, vector<Rectangle>& results);
         
     void printTree() const;
-    void printTree(const Node* node, int depth) const;
 
     void checkHealth() const;
     void checkHealth(const Node* node) const;

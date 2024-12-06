@@ -43,20 +43,50 @@ vector<Rectangle> bruteForceQuery(const vector<Rectangle>& points, const Rectang
     return results;
 }
 
-void performInsertions(RStarTree& tree, vector<Rectangle>& allPoints, int numData, int minRange, int maxRange, bool validateResults) {
-    auto start = high_resolution_clock::now();
+vector<Rectangle> generateRandomData(int numData, int minRange, int maxRange) {
+    vector<Rectangle> dataPoints;
     for (int i = 0; i < numData; ++i) {
         float x1 = static_cast<float>(minRange + rand() % (maxRange - minRange + 1));
         float y1 = static_cast<float>(minRange + rand() % (maxRange - minRange + 1));
         Rectangle rect({x1, y1}, {x1, y1});
-        tree.insert(rect);
-        if (validateResults) allPoints.push_back(rect);
+        dataPoints.push_back(rect);
     }
-    auto durationInsert = duration_cast<milliseconds>(high_resolution_clock::now() - start);
-    cout << "Insertion time: " << durationInsert.count() / 1000 << "s" << endl;
+    return dataPoints;
 }
 
-void performQueries(RStarTree& tree, const vector<Rectangle>& allPoints, int numQueries, int maxRange, bool validateResults) {
+void insertPointsIndividually(RStarTree& tree, const vector<Rectangle>& dataPoints) {
+    auto start = high_resolution_clock::now();
+    for (const auto& rect : dataPoints) {
+        tree.insert(rect);
+    }
+    auto duration = duration_cast<milliseconds>(high_resolution_clock::now() - start);
+    cout << "Insertion time (1 by 1): " << duration.count() / 1000.0 << " s" << endl;
+}
+
+void insertPointsInBatches(RStarTree& tree, vector<Rectangle>& dataPoints, int capacity) {
+    // Sort the data points by the first dimension (minCoords[0])
+    sort(dataPoints.begin(), dataPoints.end(), [](const Rectangle& a, const Rectangle& b) {
+        return a.minCoords[0] < b.minCoords[0];
+    });
+
+    int numBatches = (dataPoints.size() + capacity - 1) / capacity; // Calculate the number of batches
+    auto start = high_resolution_clock::now();
+
+    for (int i = 0; i < numBatches; ++i) {
+        int startIdx = i * capacity;
+        int endIdx = min(static_cast<int>(dataPoints.size()), startIdx + capacity);
+        vector<Rectangle> batch(dataPoints.begin() + startIdx, dataPoints.begin() + endIdx);
+
+        Node* batchNode = new Node(batch);
+        tree.batchInsert(batchNode);
+    }
+
+    auto duration = duration_cast<milliseconds>(high_resolution_clock::now() - start);
+    cout << "Insertion time (batches): " << duration.count() / 1000.0 << " s" << endl;
+}
+
+
+void performQueries(RStarTree& tree, const vector<Rectangle>& dataPoints, int numQueries, int maxRange, bool validateResults) {
     bool allQueriesMatch = true;
     auto totalTreeQueryTime = 0.0, totalBruteForceQueryTime = 0.0;
 
@@ -75,7 +105,7 @@ void performQueries(RStarTree& tree, const vector<Rectangle>& allPoints, int num
         if (!validateResults) continue;
 
         start = high_resolution_clock::now();
-        auto bruteResults = bruteForceQuery(allPoints, query);
+        auto bruteResults = bruteForceQuery(dataPoints, query);
         auto bruteForceDuration = duration_cast<microseconds>(high_resolution_clock::now() - start).count();
         totalBruteForceQueryTime += bruteForceDuration;
 
@@ -112,29 +142,7 @@ void performQueries(RStarTree& tree, const vector<Rectangle>& allPoints, int num
     cout << "Total R*Tree query time: " << totalTreeQueryTime / 1000000 << "s" << endl;
 }
 
-int main(int argc, char* argv[]) {
-    srand(0);
-
-    int dimension = 2;
-    int capacity = 128;
-    int numData = 10000;
-    int numQueries = 1000;
-    bool validateResults = true; // Slow! enable for brute-force validation
-    const int spaceMin = 0;
-    const int spaceMax = 100000;
-
-    parseArguments(argc, argv, numData, numQueries, dimension, capacity, validateResults);
-
-    RStarTree tree(capacity, dimension);
-    vector<Rectangle> dataPoints;
-
-    performInsertions(tree, dataPoints, numData, spaceMin, spaceMax, validateResults);
-
-    // tree.printTree();
-
-    performQueries(tree, dataPoints, numQueries, spaceMax, validateResults);
-
-    TreeStats stats = tree.getStats();
+void report(TreeStats stats){
     cout << "Tree Statistics" << endl;
     cout << "Height: " << stats.height << endl;
     cout << "Total Data Entries: " << stats.totalDataEntries << endl << endl;
@@ -144,6 +152,43 @@ int main(int argc, char* argv[]) {
     cout << "Total Node Visits: " << stats.totalNodeVisits << endl;
     cout << "Leaf Node Visits: " << stats.leafNodeVisits << endl;
     cout << "Internal Node Visits: " << stats.internalNodeVisits << endl;
+}
+
+int main(int argc, char* argv[]) {
+    srand(0);
+
+    int dimension = 2;
+    int capacity = 128;
+    int numData = 10000;
+    int numQueries = 1000;
+    bool validateResults = false;
+    const int spaceMin = 0;
+    const int spaceMax = 100000;
+
+    parseArguments(argc, argv, numData, numQueries, dimension, capacity, validateResults);
+
+    vector<Rectangle> dataPoints = generateRandomData(numData, spaceMin, spaceMax);
+    // for (auto& rect : dataPoints) {
+    //     rect.printRectangle("");
+    //     cout << endl;
+    // }
+
+    // Insert points one by one into R*-Tree
+    cout << "*Testing insertion one by one*" << endl;
+    RStarTree treeOneByOne(capacity, dimension);
+    insertPointsIndividually(treeOneByOne, dataPoints);
+    performQueries(treeOneByOne, dataPoints, numQueries, spaceMax, validateResults);
+    // treeOneByOne.printTree();
+    report(treeOneByOne.getStats());
+
+
+    // Insert points in batch into another R*-Tree
+    cout << endl << "*Testing batch insertion*" << endl;
+    RStarTree treeBatch(capacity, dimension);
+    insertPointsInBatches(treeBatch, dataPoints, capacity);
+    performQueries(treeBatch, dataPoints, numQueries, spaceMax, validateResults);
+    // treeBatch.printTree();  
+    report(treeBatch.getStats());
 
     return 0;
 }

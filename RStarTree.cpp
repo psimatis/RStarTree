@@ -10,7 +10,6 @@ Rectangle::Rectangle(int dimensions)
 Rectangle::Rectangle(const vector<float>& min, const vector<float>& max)
     : minCoords(min), maxCoords(max) {}
 
-
 float Rectangle::area() const {
     float result = 1.0f;
     for (size_t i = 0; i < minCoords.size(); ++i)
@@ -82,6 +81,9 @@ void Rectangle::printRectangle(const string& label) const {
 /////////////////////
 Node::Node(bool leaf) : isLeaf(leaf), parent(nullptr) {}
 
+Node::Node(const std::vector<Rectangle>& rects) : isLeaf(true), entries(rects), parent(nullptr) {}
+
+
 Node::~Node() {
     for (auto* child : children)
         delete child;
@@ -99,6 +101,93 @@ RStarTree::RStarTree(int maxEntries, int dimensions)
 RStarTree::~RStarTree() {
     delete root;
 }
+
+void RStarTree::batchInsert(Node* newNode) {
+    if (!newNode) {
+        cerr << "Error: newNode is null!" << endl;
+        return;
+    }
+    batchInsert(root, newNode, true);
+}
+
+void RStarTree::batchInsert(Node* currentNode, Node* newNode, bool allowReinsertion) {
+    if (!currentNode) {
+        cerr << "Error: currentNode is null!" << endl;
+        return;
+    }
+
+    bool childrenAreLeaves = !currentNode->children.empty() && currentNode->children[0]->isLeaf;
+    bool isEmpty = currentNode->children.empty();
+
+    if (isEmpty) {
+        currentNode->children.push_back(newNode);
+        currentNode->entries.push_back(Rectangle::combine(newNode->entries));
+        newNode->parent = currentNode;
+        currentNode->isLeaf = false;
+        return;
+    }
+
+    if (childrenAreLeaves) {
+        currentNode->children.push_back(newNode);
+        currentNode->entries.push_back(Rectangle::combine(newNode->entries));
+        newNode->parent = currentNode;
+        updateRectangles(currentNode);
+
+        if (currentNode->children.size() > maxEntries) {
+            // if (allowReinsertion) reinsert(currentNode);
+            // else 
+            splitNode(currentNode);
+        }
+    } else {
+        Node* subtree = chooseSubtreeBatch(currentNode, Rectangle::combine(newNode->entries));
+        if (subtree) {
+            batchInsert(subtree, newNode, allowReinsertion);
+        } else {
+            cerr << "Error: No valid subtree found in batchInsert!" << endl;
+        }
+    }
+}
+
+Node* RStarTree::chooseSubtreeBatch(Node* currentNode, const Rectangle& entry) {
+    if (!currentNode || currentNode->isLeaf) {
+        cerr << "Error: chooseSubtreeBatch called on an invalid or leaf node!" << endl;
+        return nullptr;
+    }
+
+    // If currentNode has no children, return nullptr
+    if (currentNode->children.empty()) {
+        cerr << "Error: currentNode has no children!" << endl;
+        return nullptr;
+    }
+
+    // Check if the current node's children are leaves
+    bool childrenAreLeaves = currentNode->children[0]->isLeaf;
+    if (childrenAreLeaves) {
+        return currentNode;
+    }
+
+    // Find the best child based on minimal area increase
+    Node* bestChild = nullptr;
+    float minAreaIncrease = numeric_limits<float>::max();
+
+    for (size_t i = 0; i < currentNode->entries.size(); ++i) {
+        Rectangle combined = Rectangle::combine({currentNode->entries[i], entry});
+        float areaIncrease = combined.area() - currentNode->entries[i].area();
+
+        if (areaIncrease < minAreaIncrease) {
+            minAreaIncrease = areaIncrease;
+            bestChild = currentNode->children[i];
+        }
+    }
+
+    if (!bestChild) {
+        cerr << "Error: No valid subtree found in chooseSubtreeBatch!" << endl;
+        return nullptr;
+    }
+
+    return bestChild;
+}
+
 
 void RStarTree::insert(const Rectangle& entry) {
     insert(root, entry, true);
@@ -320,6 +409,7 @@ void RStarTree::splitNode(Node* node) {
             splitNode(parent);
     }
 }
+
 
 void RStarTree::checkHealth() const {
     checkHealth(root);
