@@ -34,7 +34,7 @@ float Rectangle::overlap(const Rectangle& other) const {
 
 Rectangle Rectangle::combine(const vector<Rectangle>& rectangles) {
     if (rectangles.empty()) 
-        return Rectangle(vector<float>(2, 0), vector<float>(2, 0));
+        return Rectangle();
 
     vector<float> combinedMin = rectangles[0].minCoords;
     vector<float> combinedMax = rectangles[0].maxCoords;
@@ -403,6 +403,10 @@ vector<Rectangle> RStarTree::rangeQuery(const Rectangle& query){
 void RStarTree::rangeQuery(Node* node, const Rectangle& query, vector<Rectangle>& results) {
     if (!node) return;
 
+    stats.totalNodeVisits++;
+    if (node->isLeaf) stats.leafNodeVisits++;
+    else stats.internalNodeVisits++;
+
     for (size_t i = 0; i < node->entries.size(); ++i) {
         const Rectangle& currentEntry = node->entries[i];
         if (query.overlapCheck(currentEntry)) {
@@ -413,7 +417,7 @@ void RStarTree::rangeQuery(Node* node, const Rectangle& query, vector<Rectangle>
 }
 
 TreeStats RStarTree::getStats() {
-    TreeStats stats;
+
     cout << "Capacity: " << maxEntries << endl;
     cout << "Minimum capacity: " << minEntries << endl;
     cout << "Dimensions: " << dimensions << endl;
