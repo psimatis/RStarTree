@@ -52,8 +52,8 @@ void performInsertions(RStarTree& tree, vector<Rectangle>& allPoints, int numDat
         tree.insert(rect);
         if (validateResults) allPoints.push_back(rect);
     }
-    auto durationInsert = duration_cast<seconds>(high_resolution_clock::now() - start);
-    cout << "Insertion of " << numData << " rectangles took: " << durationInsert.count() << "s" << endl;
+    auto durationInsert = duration_cast<milliseconds>(high_resolution_clock::now() - start);
+    cout << "Insertion time: " << durationInsert.count() / 1000 << "s" << endl;
 }
 
 void performQueries(RStarTree& tree, const vector<Rectangle>& allPoints, int numQueries, int maxRange, bool validateResults) {
@@ -130,7 +130,6 @@ int main(int argc, char* argv[]) {
 
     performInsertions(tree, dataPoints, numData, spaceMin, spaceMax, validateResults);
 
-    // cout << "R*-Tree Structure:\n";
     // tree.printTree();
 
     performQueries(tree, dataPoints, numQueries, spaceMax, validateResults);

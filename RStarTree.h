@@ -19,12 +19,15 @@ public:
     Rectangle(int dimensions);
     Rectangle(const vector<float>& min, const vector<float>& max);
 
-    void printRectangle(const string& label) const;
-    float area() const;
-    bool overlapCheck(const Rectangle& other) const;
-    float overlap(const Rectangle& other) const;
-
+    vector<float> getCenter() const;
     static Rectangle combine(const vector<Rectangle>& rectangles);
+
+    float area() const;
+    float overlap(const Rectangle& other) const;
+    
+    bool overlapCheck(const Rectangle& other) const;
+
+    void printRectangle(const string& label) const;
     
     bool operator==(const Rectangle& other) const {
         return minCoords == other.minCoords && maxCoords == other.maxCoords;
@@ -71,9 +74,14 @@ public:
     void insert(const Rectangle& entry);
     void insert(Node* currentNode, const Rectangle& entry, bool allowReinsertion);
     void reinsert(Node* node);
+
     void splitNode(Node* node);
-    Node* chooseSubtree(Node* currentNode, const Rectangle& entry);
+
+    void chooseBestSplit(const vector<Rectangle>& sortedEntries, vector<size_t>& sortedIndices, int& bestAxis, size_t& bestSplitIndex);
+    void sortEntriesAndChildren(Node* node, const vector<Rectangle>& sortedEntries, vector<size_t>& sortedIndices, int bestAxis);
     void updateRectangles(Node* node);
+
+    Node* chooseSubtree(Node* currentNode, const Rectangle& entry);
 
     vector<Rectangle> rangeQuery(const Rectangle& query);
     void rangeQuery(Node* node, const Rectangle& query, vector<Rectangle>& results);
