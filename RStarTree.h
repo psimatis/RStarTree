@@ -74,6 +74,7 @@ public:
     void splitNode(Node* node);
     Node* chooseSubtree(Node* currentNode, const Rectangle& entry);
     void adjustBoundingRectangle(Node* node);
+    void updateBoundingRectangle(Node* node);
     void reinsert(Node* node);
     Node* chooseLeaf(Node* currentNode, const Rectangle& entry);
 
@@ -82,6 +83,11 @@ public:
         
     void printTree() const;
     void printTree(const Node* node, int depth) const;
+
+    void checkHealth() const;
+    void checkHealth(const Node* node) const;
+
+    void validateSplit(Node* parent);
 
     TreeStats getStats();
 };

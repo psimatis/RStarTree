@@ -21,32 +21,32 @@ int main() {
     srand(0);
 
     int dimension = 2;
-    int capacity = 5;
-    int numData = 20;
-    int numQueries = 100;
+    int capacity = 128;
+    int numData = 10000;
+    int numQueries = 1000;
 
     RStarTree tree(capacity, dimension);
 
     // Insert points
     vector<Rectangle> allPoints;
     const int minRange = 0;
-    const int maxRange = 10; 
+    const int maxRange = 100000; 
     auto start = high_resolution_clock::now();
     for (int i = 0; i < numData; ++i) {
         float x1 = static_cast<float>(minRange + rand() % (maxRange - minRange + 1));
         float y1 = static_cast<float>(minRange + rand() % (maxRange - minRange + 1));
         Rectangle rect({x1, y1}, {x1, y1});
+        // cout << "Inserting: [(" << x1 << ", " << y1 << "), (" << x1 << ", " << y1 << ")]" << endl;
         tree.insert(rect);
-        // cout << "Inserted Rectangle: [(" << x1 << ", " << y1 << "), (" << x1 << ", " << y1 << ")]" << endl;
+        // tree.printTree();
         allPoints.push_back(rect);
     }
     auto durationInsert = duration_cast<seconds>(high_resolution_clock::now() - start);
     cout << "Insertion of " << numData << " rectangles took: " << durationInsert.count() << "s" << endl;
 
-
     // Print tree structure
-    cout << "R*-Tree Structure:\n";
-    tree.printTree();
+    // cout << "R*-Tree Structure:\n";
+    // tree.printTree();
 
     // Query
     bool allQueriesMatch = true;

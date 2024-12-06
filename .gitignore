@@ -43,3 +43,7 @@ Thumbs.db
 
 # Ignore executables (e.g., `rstartree` in your case)
 rstartree
+
+output.txt
+
+*.py
