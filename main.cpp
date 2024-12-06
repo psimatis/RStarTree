@@ -5,7 +5,7 @@
 #include <chrono>
 #include <set>
 
-using namespace std::chrono;
+using namespace chrono;
 
 void parseArguments(int argc, char* argv[], int& numData, int& numQueries, int& dimension, int& capacity, bool& validateResults) {
     for (int i = 1; i < argc; ++i) {
@@ -64,10 +64,6 @@ void insertPointsIndividually(RStarTree& tree, const vector<Rectangle>& dataPoin
 }
 
 void insertPointsInBatches(RStarTree& tree, vector<Rectangle>& dataPoints, int capacity) {
-    // Sort the data points by the first dimension 
-    sort(dataPoints.begin(), dataPoints.end(), [](const Rectangle& a, const Rectangle& b) {
-        return a.minCoords[0] < b.minCoords[0];
-    });
 
     int numBatches = (dataPoints.size() + capacity - 1) / capacity;
     auto start = high_resolution_clock::now();
@@ -77,14 +73,19 @@ void insertPointsInBatches(RStarTree& tree, vector<Rectangle>& dataPoints, int c
         int endIdx = min(static_cast<int>(dataPoints.size()), startIdx + capacity);
         vector<Rectangle> batch(dataPoints.begin() + startIdx, dataPoints.begin() + endIdx);
 
-        Node* batchNode = new Node(batch);
-        tree.batchInsert(batchNode);
+        tree.batchInsert(batch);
     }
 
     auto duration = duration_cast<milliseconds>(high_resolution_clock::now() - start);
     cout << "Insertion time (batches): " << duration.count() / 1000.0 << " s" << endl;
 }
 
+void insertPointsUsingBulkLoading(RStarTree& tree, vector<Rectangle>& dataPoints) {
+    auto start = high_resolution_clock::now();
+    tree.bulkLoad(dataPoints); 
+    auto duration = duration_cast<milliseconds>(high_resolution_clock::now() - start);
+    cout << "Insertion time (bulk): " << duration.count() / 1000.0 << " s" << endl;
+}
 
 void performQueries(RStarTree& tree, const vector<Rectangle>& dataPoints, int numQueries, int maxRange, bool validateResults) {
     bool allQueriesMatch = true;
@@ -169,19 +170,25 @@ int main(int argc, char* argv[]) {
 
     vector<Rectangle> dataPoints = generateRandomData(numData, spaceMin, spaceMax);
 
-    cout << "*Testing insertion one by one*" << endl;
+    cout << "*Test: Insertion*" << endl;
     RStarTree treeOneByOne(capacity, dimension);
     insertPointsIndividually(treeOneByOne, dataPoints);
     performQueries(treeOneByOne, dataPoints, numQueries, spaceMax, validateResults);
     // treeOneByOne.printTree();
     report(treeOneByOne.getStats());
 
-    cout << endl << "*Testing batch insertion*" << endl;
+    cout << endl << "*Test: Batch insertion*" << endl;
     RStarTree treeBatch(capacity, dimension);
     insertPointsInBatches(treeBatch, dataPoints, capacity);
     performQueries(treeBatch, dataPoints, numQueries, spaceMax, validateResults);
     // treeBatch.printTree();  
     report(treeBatch.getStats());
+
+    cout << endl << "*Testing: Bulk loading*" << endl;
+    RStarTree treeBulk(capacity, dimension);
+    insertPointsUsingBulkLoading(treeBulk, dataPoints);
+    performQueries(treeBulk, dataPoints, numQueries, spaceMax, validateResults);
+    report(treeBulk.getStats());
 
     return 0;
 }

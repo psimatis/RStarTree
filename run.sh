@@ -1,2 +1,2 @@
 g++ main.cpp RStarTree.cpp -o rstartree
-./rstartree -v 
+./rstartree -n 100000

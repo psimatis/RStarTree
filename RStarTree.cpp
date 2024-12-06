@@ -151,7 +151,18 @@ Node* RStarTree::chooseSubtree(Node* currentNode, const Rectangle& entry) {
     return bestChild;
 }
 
-void RStarTree::batchInsert(Node* newNode) {
+void RStarTree::batchInsert(vector<Rectangle>& rectangles) {
+    if (rectangles.empty()) return;
+
+    // Step 1: Sort rectangles by the x-axis (or the first dimension)
+    sort(rectangles.begin(), rectangles.end(), [](const Rectangle& a, const Rectangle& b) {
+        return a.minCoords[0] < b.minCoords[0];
+    });
+
+    // Step 2: Create a Node from the sorted rectangles
+    Node* newNode = new Node(rectangles);
+
+    // Step 3: Insert the new Node into the tree
     batchInsert(root, newNode);
 }
 
@@ -222,6 +233,50 @@ Node* RStarTree::chooseSubtreeBatch(Node* currentNode, const Rectangle& entry) {
     }
 
     return bestChild;
+}
+
+// STR bulk loading
+void RStarTree::bulkLoad(vector<Rectangle>& rectangles) {
+    if (rectangles.empty()) return;
+
+    // Sort (x-axis primary, y-axis secondary)
+    sort(rectangles.begin(), rectangles.end(), [](const Rectangle& a, const Rectangle& b) {
+        if (a.minCoords[0] != b.minCoords[0])
+            return a.minCoords[0] < b.minCoords[0];
+        return a.minCoords[1] < b.minCoords[1];
+    });
+
+    // Create leaf nodes
+    vector<Node*> leafNodes;
+    for (size_t i = 0; i < rectangles.size(); i += maxEntries) {
+        size_t end = min(i + maxEntries, rectangles.size());
+        Node* leafNode = new Node(true);
+        leafNode->entries.insert(leafNode->entries.end(), rectangles.begin() + i, rectangles.begin() + end);
+        leafNodes.push_back(leafNode);
+    }
+
+    // Build the tree bottom-up
+    vector<Node*> currentLevel = leafNodes;
+    vector<Node*> nextLevel;
+
+    while (currentLevel.size() > 1) {
+        nextLevel.clear();
+
+        for (size_t i = 0; i < currentLevel.size(); i += maxEntries) {
+            size_t end = min(i + maxEntries, currentLevel.size());
+            Node* parentNode = new Node(false);
+            for (size_t j = i; j < end; ++j) {
+                parentNode->children.push_back(currentLevel[j]);
+                parentNode->entries.push_back(Rectangle::combine(currentLevel[j]->entries));
+                currentLevel[j]->parent = parentNode;
+            }
+            nextLevel.push_back(parentNode);
+        }
+
+        swap(currentLevel, nextLevel); // Swap buffers for the next iteration
+    }
+
+    root = currentLevel.front(); // Set the final root node
 }
 
 void RStarTree::updateRectangles(Node* node) {
