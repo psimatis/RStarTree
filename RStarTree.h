@@ -77,7 +77,7 @@ public:
     void insert(Node* currentNode, const Rectangle& entry, bool allowReinsertion);
     void reinsert(Node* node);
     void batchInsert(Node* newNode);
-    void batchInsert(Node* currentNode, Node* newNode, bool allowReinsertion);
+    void batchInsert(Node* currentNode, Node* newNode);
 
     Node* chooseSubtree(Node* currentNode, const Rectangle& entry);
     Node* chooseSubtreeBatch(Node* currentNode, const Rectangle& entry);

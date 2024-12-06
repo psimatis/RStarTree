@@ -64,12 +64,12 @@ void insertPointsIndividually(RStarTree& tree, const vector<Rectangle>& dataPoin
 }
 
 void insertPointsInBatches(RStarTree& tree, vector<Rectangle>& dataPoints, int capacity) {
-    // Sort the data points by the first dimension (minCoords[0])
+    // Sort the data points by the first dimension 
     sort(dataPoints.begin(), dataPoints.end(), [](const Rectangle& a, const Rectangle& b) {
         return a.minCoords[0] < b.minCoords[0];
     });
 
-    int numBatches = (dataPoints.size() + capacity - 1) / capacity; // Calculate the number of batches
+    int numBatches = (dataPoints.size() + capacity - 1) / capacity;
     auto start = high_resolution_clock::now();
 
     for (int i = 0; i < numBatches; ++i) {
@@ -168,12 +168,7 @@ int main(int argc, char* argv[]) {
     parseArguments(argc, argv, numData, numQueries, dimension, capacity, validateResults);
 
     vector<Rectangle> dataPoints = generateRandomData(numData, spaceMin, spaceMax);
-    // for (auto& rect : dataPoints) {
-    //     rect.printRectangle("");
-    //     cout << endl;
-    // }
 
-    // Insert points one by one into R*-Tree
     cout << "*Testing insertion one by one*" << endl;
     RStarTree treeOneByOne(capacity, dimension);
     insertPointsIndividually(treeOneByOne, dataPoints);
@@ -181,8 +176,6 @@ int main(int argc, char* argv[]) {
     // treeOneByOne.printTree();
     report(treeOneByOne.getStats());
 
-
-    // Insert points in batch into another R*-Tree
     cout << endl << "*Testing batch insertion*" << endl;
     RStarTree treeBatch(capacity, dimension);
     insertPointsInBatches(treeBatch, dataPoints, capacity);
