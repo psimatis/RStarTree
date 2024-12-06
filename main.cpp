@@ -24,6 +24,7 @@ int main() {
     int capacity = 128;
     int numData = 50000;
     int numQueries = 1000;
+    bool validateResults = true; // Slow! enable for brute-force validation
 
     RStarTree tree(capacity, dimension);
 
@@ -37,7 +38,7 @@ int main() {
         float y1 = static_cast<float>(minRange + rand() % (maxRange - minRange + 1));
         Rectangle rect({x1, y1}, {x1, y1});
         tree.insert(rect);
-        allPoints.push_back(rect);
+        if (validateResults) allPoints.push_back(rect);
     }
     auto durationInsert = duration_cast<seconds>(high_resolution_clock::now() - start);
     cout << "Insertion of " << numData << " rectangles took: " << durationInsert.count() << "s" << endl;
@@ -47,22 +48,26 @@ int main() {
 
     // Query
     bool allQueriesMatch = true;
-    float treeQueryTime = 0, bruteForceQueryTime = 0;
+    auto totalTreeQueryTime = 0.0, totalBruteForceQueryTime = 0.0;
 
     for (int i = 0; i < numQueries; ++i) {
         float queryMinX = static_cast<float>(rand() % maxRange);
         float queryMinY = static_cast<float>(rand() % maxRange);
-        float queryMaxX = queryMinX + static_cast<float>(rand() % 10 + 1);
-        float queryMaxY = queryMinY + static_cast<float>(rand() % 10 + 1);
+        float queryMaxX = queryMinX + static_cast<float>(rand() % 100 + 1);
+        float queryMaxY = queryMinY + static_cast<float>(rand() % 100 + 1);
         Rectangle query({queryMinX, queryMinY}, {queryMaxX, queryMaxY});
 
-        start = high_resolution_clock::now();
+        auto start = high_resolution_clock::now();
         auto rtreeResults = tree.rangeQuery(query);
-        treeQueryTime += duration_cast<milliseconds>(high_resolution_clock::now() - start).count();
+        auto treeQueryDuration = duration_cast<microseconds>(high_resolution_clock::now() - start).count();
+        totalTreeQueryTime += treeQueryDuration;
+
+        if (!validateResults) continue;
 
         start = high_resolution_clock::now();
         auto bruteResults = bruteForceQuery(allPoints, query);
-        bruteForceQueryTime += duration_cast<milliseconds>(high_resolution_clock::now() - start).count();
+        auto bruteForceDuration = duration_cast<microseconds>(high_resolution_clock::now() - start).count();
+        totalBruteForceQueryTime += bruteForceDuration;
 
         if (rtreeResults.size() != bruteResults.size()){
             allQueriesMatch = false;
@@ -90,12 +95,11 @@ int main() {
 
     cout << "Number of queries: " << numQueries << endl;
 
-    if (allQueriesMatch) cout << "All queries matched!" << endl;
-    else cout << "Some queries did not match!" << endl;
-
-    cout << "R*Tree query time: " << treeQueryTime << endl;
-    cout << "Brute force query time: " << bruteForceQueryTime << endl;
-
+    if (validateResults) {
+        cout << (allQueriesMatch ? "All queries matched!" : "Some queries did not match!") << endl;
+        cout << "Total Brute force query time: " << totalBruteForceQueryTime / 1000000 << " s" << endl;
+    }
+    cout << "Total R*Tree query time: " << totalTreeQueryTime / 1000000  << "s" << endl;
 
     TreeStats stats = tree.getStats();
     cout << "Tree Statistics" << endl;

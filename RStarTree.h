@@ -69,7 +69,8 @@ public:
     ~RStarTree();
 
     void insert(const Rectangle& entry);
-    void insert(Node* currentNode, const Rectangle& entry);
+    void insert(Node* currentNode, const Rectangle& entry, bool allowReinsertion);
+    void reinsert(Node* node);
     void splitNode(Node* node);
     Node* chooseSubtree(Node* currentNode, const Rectangle& entry);
     void updateRectangles(Node* node);

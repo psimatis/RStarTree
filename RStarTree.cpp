@@ -94,10 +94,10 @@ RStarTree::~RStarTree() {
 }
 
 void RStarTree::insert(const Rectangle& entry) {
-    insert(root, entry);
+    insert(root, entry, true);
 }
 
-void RStarTree::insert(Node* currentNode, const Rectangle& entry) {
+void RStarTree::insert(Node* currentNode, const Rectangle& entry, bool allowReinsertion) {
     if (!currentNode) {
         cerr << "Error: currentNode is null!" << endl;
         return;
@@ -107,12 +107,13 @@ void RStarTree::insert(Node* currentNode, const Rectangle& entry) {
         currentNode->entries.push_back(entry);
         updateRectangles(currentNode);
         
-        if (currentNode->entries.size() > maxEntries)
-            splitNode(currentNode);
-
+        if (currentNode->entries.size() > maxEntries){
+            if (allowReinsertion) reinsert(currentNode); 
+            else splitNode(currentNode); 
+        }
     } else {
         Node* subtree = chooseSubtree(currentNode, entry);
-        if (subtree) insert(subtree, entry);
+        if (subtree) insert(subtree, entry, allowReinsertion);  
         else cerr << "Error: No valid subtree found!" << endl;
     }
     // validateTree(); // Turn on for debugging.
@@ -155,6 +156,46 @@ void RStarTree::updateRectangles(Node* node) {
         }
         updateRectangles(node->parent);
     }
+}
+
+void RStarTree::reinsert(Node* node) {
+    // Sort entries by distance from the center
+    Rectangle boundingRect = Rectangle::combine(node->entries);
+    vector<float> center(boundingRect.minCoords.size());
+    for (size_t i = 0; i < center.size(); ++i)
+        center[i] = (boundingRect.minCoords[i] + boundingRect.maxCoords[i]) / 2.0f;
+
+    vector<pair<float, size_t>> distances; // {distance, index}
+    for (size_t i = 0; i < node->entries.size(); ++i) {
+        float distance = 0.0f;
+        for (size_t d = 0; d < center.size(); ++d) {
+            float diff = (node->entries[i].minCoords[d] + node->entries[i].maxCoords[d]) / 2.0f - center[d];
+            distance += diff * diff;
+        }
+        distances.emplace_back(sqrt(distance), i);
+    }
+
+    sort(distances.rbegin(), distances.rend());
+
+    // Reinsert the farthest 30% of entries
+    size_t reinsertCount = static_cast<size_t>(distances.size() * 0.3); 
+    vector<Rectangle> reinsertEntries;
+    for (size_t i = 0; i < reinsertCount; ++i) 
+        reinsertEntries.push_back(node->entries[distances[i].second]);
+
+    // Remove the selected entries from the node
+    vector<Rectangle> remainingEntries;
+    for (size_t i = reinsertCount; i < distances.size(); ++i) 
+        remainingEntries.push_back(node->entries[distances[i].second]);
+    node->entries = remainingEntries;
+
+    // Reinsert
+    for (const auto& entry : reinsertEntries)
+        insert(root, entry, false);
+
+    // If the node still overflows, split it
+    if (node->entries.size() > maxEntries)
+        splitNode(node);
 }
 
 void RStarTree::splitNode(Node* node) {
