@@ -6,7 +6,8 @@
 #include <algorithm>
 #include <iostream>
 #include <cmath>
-#include <functional> 
+#include <functional>
+#include <numeric>
 
 using namespace std;
 
@@ -38,7 +39,6 @@ public:
     Node* parent;
 
     Node(bool leaf);
-    size_t getParentIndex() const;
     ~Node();
 };
 
@@ -70,13 +70,9 @@ public:
 
     void insert(const Rectangle& entry);
     void insert(Node* currentNode, const Rectangle& entry);
-    void insert(Node* currentNode, const Rectangle& entry, bool reinserting);
     void splitNode(Node* node);
     Node* chooseSubtree(Node* currentNode, const Rectangle& entry);
-    void adjustBoundingRectangle(Node* node);
-    void updateBoundingRectangle(Node* node);
-    void reinsert(Node* node);
-    Node* chooseLeaf(Node* currentNode, const Rectangle& entry);
+    void updateRectangles(Node* node);
 
     vector<Rectangle> rangeQuery(const Rectangle& query);
     void rangeQuery(Node* node, const Rectangle& query, vector<Rectangle>& results);
@@ -86,8 +82,6 @@ public:
 
     void checkHealth() const;
     void checkHealth(const Node* node) const;
-
-    void validateSplit(Node* parent);
 
     TreeStats getStats();
 };

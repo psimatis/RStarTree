@@ -22,7 +22,7 @@ int main() {
 
     int dimension = 2;
     int capacity = 128;
-    int numData = 10000;
+    int numData = 50000;
     int numQueries = 1000;
 
     RStarTree tree(capacity, dimension);
@@ -36,15 +36,12 @@ int main() {
         float x1 = static_cast<float>(minRange + rand() % (maxRange - minRange + 1));
         float y1 = static_cast<float>(minRange + rand() % (maxRange - minRange + 1));
         Rectangle rect({x1, y1}, {x1, y1});
-        // cout << "Inserting: [(" << x1 << ", " << y1 << "), (" << x1 << ", " << y1 << ")]" << endl;
         tree.insert(rect);
-        // tree.printTree();
         allPoints.push_back(rect);
     }
     auto durationInsert = duration_cast<seconds>(high_resolution_clock::now() - start);
     cout << "Insertion of " << numData << " rectangles took: " << durationInsert.count() << "s" << endl;
 
-    // Print tree structure
     // cout << "R*-Tree Structure:\n";
     // tree.printTree();
 
@@ -69,35 +66,23 @@ int main() {
 
         if (rtreeResults.size() != bruteResults.size()){
             allQueriesMatch = false;
-            cout << "rtreeResults.size(): " << rtreeResults.size() << endl;
-            cout << "bruteResults.size(): " << bruteResults.size() << endl;
             cout << "Query Range: [(" << queryMinX << ", " << queryMinY << "), (" << queryMaxX << ", " << queryMaxY << ")]\n";
+            cout << "rtreeResults.size(): " << rtreeResults.size() << " | bruteResults.size(): " << bruteResults.size() << endl;
 
-            // Identify mismatched results
             set<pair<pair<float, float>, pair<float, float>>> rtreeSet, bruteSet;
-
-            for (const auto& rect : rtreeResults) {
-                rtreeSet.insert({{rect.minCoords[0], rect.minCoords[1]}, {rect.maxCoords[0], rect.maxCoords[1]}});
-            }
-
-            for (const auto& rect : bruteResults) {
-                bruteSet.insert({{rect.minCoords[0], rect.minCoords[1]}, {rect.maxCoords[0], rect.maxCoords[1]}});
-            }
+            for (const auto& rect : rtreeResults) rtreeSet.insert({{rect.minCoords[0], rect.minCoords[1]}, {rect.maxCoords[0], rect.maxCoords[1]}});
+            for (const auto& rect : bruteResults) bruteSet.insert({{rect.minCoords[0], rect.minCoords[1]}, {rect.maxCoords[0], rect.maxCoords[1]}});
 
             cout << "Results in R*-Tree but not in brute-force:\n";
             for (const auto& rect : rtreeSet) {
-                if (bruteSet.find(rect) == bruteSet.end()) {
-                    cout << "[(" << rect.first.first << ", " << rect.first.second << "), (" 
-                        << rect.second.first << ", " << rect.second.second << ")]\n";
-                }
+                if (bruteSet.find(rect) == bruteSet.end()) 
+                    cout << "[(" << rect.first.first << ", " << rect.first.second << "), (" << rect.second.first << ", " << rect.second.second << ")]\n";
             }
 
             cout << "Results in brute-force but not in R*-Tree:\n";
             for (const auto& rect : bruteSet) {
-                if (rtreeSet.find(rect) == rtreeSet.end()) {
-                    cout << "[(" << rect.first.first << ", " << rect.first.second << "), (" 
-                        << rect.second.first << ", " << rect.second.second << ")]\n";
-                }
+                if (rtreeSet.find(rect) == rtreeSet.end()) 
+                    cout << "[(" << rect.first.first << ", " << rect.first.second << "), (" << rect.second.first << ", " << rect.second.second << ")]\n";
             }
             break;
         }
