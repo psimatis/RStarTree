@@ -1,7 +1,7 @@
 #include "RStarTree.h"
 
 int main() {
-    // Create a new R*-Tree with max entries per node = 10 and 2 dimensions
+    // Create a new R*-Tree with node capacity = 10 and 2 dimensions
     RStarTree tree(10, 2);
 
     // Insert a rectangle
