@@ -41,10 +41,10 @@ Each test's details are documented within its corresponding `.cpp`.
   A bounding box with utility methods (e.g., `area()`, `overlap()`, and `combine()`.
 
 - **`Node`**:
-  Each tree node is either `leaf` or `internal`. A node stores pointers to its children and their rectangles.
+  Each tree node is either `leaf` or `internal`. It holds pointers to its children and their rectangles.
 
 - **`RStarTree`**:
-  The overall tree structure and its operations (e.g., `insertion()`, `reinsertion()`, and `query()`).
+  The overall tree structure and its operations (e.g., `insertion()`, and `query()`).
 
 
 ## Limitations
