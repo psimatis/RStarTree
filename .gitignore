@@ -47,3 +47,6 @@ rstartree
 output.txt
 
 *.py
+
+experiment_results/
+*.png
