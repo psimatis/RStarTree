@@ -1,46 +1,55 @@
 # R*-Tree
 
-The R*-Tree[^1] is the *star* of multidimensional indexing, but its implementations are hard to modify or require setups. Thus, I wrote an easy to read, run, and modify version, while also providing rare features (e.g., batch insertion).
+The R*-Tree[^1] is the *star* of multidimensional indexing. Nevertheless, I found its implementations complex or hard to modify. Thus, I wrote my own with a focus on simplicity and ease of modification, while also providing features like batch insertion and STR bulk loading.
 
 ## Features
 
-1. **Insertion**: Insert a single object in R* fashion (e.g., trigger reinsertion when necessary). 
+1. **Insertion**: Insert a single object in R* fashion (e.g., trigger reinsertions). 
 
 2. **Batch Insertion**: Insert multiple objects as a leaf.
 
 3. **Bulk Loading**: Use STR[^2] to construct the tree from a set of objects.
 
-4. **Range Queries**: Retrieve all objects overlapping a given query rectangle.
+4. **Range Queries**: Retrieve objects overlapping a query rectangle.
 
 5. **Dimensionality**: The index supports any dimension.
 
-6. **Statistics**: Retrieve information about the tree (e.g., such as height, number of nodes, and data entries).
+6. **Statistics**: Retrieve information about the tree (e.g., such as height, number of nodes, and size in MB).
 
 ## How to run
+
 ### For the impatient
 
 ```bash
 $ ./run.sh
 ```
-This compiles and executes and the code.
+`run.sh` compiles and executes `main.cpp` which performs toy R*-Tree operations.
 
-### How to compile
+### Testing
 
 ```bash
-$ g++ main.cpp RStarTree.cpp -o rstar_tree
+$ cd tests
+$ ./runTests.sh
 ```
+The `tests/` directory includes tests for the R*-Tree (e.g., comparing query results against a linear scan). 
+To compile and execute them, simply run `runTests.sh`. 
+Each test's details are documented within its corresponding `.cpp`.
 
-### Usage parameters
-- **-n**: The number of objects to insert.
-- **-d**: The object dimensionality (e.g., 2 means 2D rectangles).
-- **-c**: The maximum number of entries per node. The minimum fill factor is 50%.
-- **-q**: The number of range queries.
-- **-v**: Validates range query results by comparing them against a linear search.
-  
-Example usage:
-```bash
-$ ./rstar_tree -d 2 -n 10000 -v
-```
+## Classes
+
+- **`Rectangle`**: 
+  A bounding box with utility methods (e.g., `area()`, `overlap()`, and `combine()`.
+
+- **`Node`**:
+  Each tree node is either `leaf` or `internal`. A node stores pointers to its children and their rectangles.
+
+- **`RStarTree`**:
+  The overall tree structure and its operations (e.g., `insertion()`, `reinsertion()`, and `query()`).
+
+
+## Limitations
+- No deletion.
+- No support for disk-based storage.
 
 ## Contributions
 Contributions are welcome. Feel free to submit pull requests or open issues for discussions.
