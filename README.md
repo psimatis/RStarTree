@@ -14,7 +14,7 @@ The R*-Tree[^1] is the *star* of multidimensional indexing. Nevertheless, I foun
 
 5. **Dimensionality**: The index supports any dimension.
 
-6. **Statistics**: Retrieve information about the tree (e.g., such as height, number of nodes, and size in MB).
+6. **Statistics**: Retrieve tree information (e.g., height, number of nodes, and size in MB).
 
 ## How to run
 
