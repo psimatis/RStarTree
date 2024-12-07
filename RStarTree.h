@@ -48,7 +48,7 @@ public:
 };
 
 
-struct TreeStats {
+struct TreeInfo {
     size_t totalNodes = 0;
     size_t leafNodes = 0;
     size_t internalNodes = 0;
@@ -58,6 +58,9 @@ struct TreeStats {
     size_t internalNodeVisits = 0;
     size_t totalNodeVisits = 0;
     float sizeInMB = 0.0f;
+    int dimensions = 0;
+    int capacity = 0;
+    int minCapacity = 0;
 };
 
 
@@ -68,7 +71,7 @@ private:
     int minEntries;
     int dimensions;
 
-    struct TreeStats stats;
+    struct TreeInfo info;
 
 public:
     RStarTree(int maxEntries, int dimensions);
@@ -99,7 +102,7 @@ public:
     void checkHealth(const Node* node) const;
 
     float calculateSizeInMB() const;
-    TreeStats getStats();
+    TreeInfo getStats();
 };
 
 #endif // RSTARTREE_H

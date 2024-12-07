@@ -489,9 +489,9 @@ vector<Rectangle> RStarTree::rangeQuery(const Rectangle& query){
 void RStarTree::rangeQuery(Node* node, const Rectangle& query, vector<Rectangle>& results) {
     if (!node) return;
 
-    stats.totalNodeVisits++;
-    if (node->isLeaf) stats.leafNodeVisits++;
-    else stats.internalNodeVisits++;
+    info.totalNodeVisits++;
+    if (node->isLeaf) info.leafNodeVisits++;
+    else info.internalNodeVisits++;
 
     for (size_t i = 0; i < node->entries.size(); ++i) {
         const Rectangle& currentEntry = node->entries[i];
@@ -576,29 +576,29 @@ float RStarTree::calculateSizeInMB() const {
 }
 
 
-TreeStats RStarTree::getStats() {
+TreeInfo RStarTree::getStats() {
 
-    cout << "Capacity: " << maxEntries << endl;
-    cout << "Minimum capacity: " << minEntries << endl;
-    cout << "Dimensions: " << dimensions << endl;
+    info.capacity = maxEntries;
+    info.minCapacity = minEntries;
+    info.dimensions = dimensions;
 
     function<void(const Node*, int)> computeStats = [&](const Node* node, size_t currentDepth) {
         if (!node) return;
 
-        stats.totalNodes++;
+        info.totalNodes++;
         if (node->isLeaf) {
-            stats.leafNodes++;
-            stats.totalDataEntries += node->entries.size();
+            info.leafNodes++;
+            info.totalDataEntries += node->entries.size();
         } else {
-            stats.internalNodes++;
+            info.internalNodes++;
             for (const auto* child : node->children)
                 computeStats(child, currentDepth + 1);
         }
 
-        stats.height = max(stats.height, currentDepth);
+        info.height = max(info.height, currentDepth);
     };
 
     computeStats(root, 1);
-    stats.sizeInMB = calculateSizeInMB();
-    return stats;
+    info.sizeInMB = calculateSizeInMB();
+    return info;
 }
