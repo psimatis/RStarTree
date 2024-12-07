@@ -545,6 +545,37 @@ void RStarTree::printTree() const {
     cout << "-------------" << endl;
 }
 
+float RStarTree::calculateSizeInMB() const {
+    size_t totalSize = 0;
+
+    function<void(const Node*)> calculateNodeSize = [&](const Node* node) {
+        if (!node) return;
+
+        totalSize += sizeof(bool);
+        totalSize += sizeof(Node*); 
+        totalSize += sizeof(vector<Node*>);
+        totalSize += sizeof(vector<Rectangle>); 
+
+        // Ignore data points
+        if (!node->isLeaf) {
+            totalSize += node->entries.size() * sizeof(Rectangle);
+
+            for (const auto& rectangle : node->entries)
+                totalSize += 2 * (dimensions * sizeof(float));
+        }
+
+        totalSize += node->children.size() * sizeof(Node*);
+
+        for (const auto* child : node->children)
+            calculateNodeSize(child);
+    };
+
+    calculateNodeSize(root);
+
+    return static_cast<float>(totalSize) / (1024.0f * 1024.0f); 
+}
+
+
 TreeStats RStarTree::getStats() {
 
     cout << "Capacity: " << maxEntries << endl;
@@ -568,5 +599,6 @@ TreeStats RStarTree::getStats() {
     };
 
     computeStats(root, 1);
+    stats.sizeInMB = calculateSizeInMB();
     return stats;
 }

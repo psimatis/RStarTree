@@ -57,6 +57,7 @@ struct TreeStats {
     size_t leafNodeVisits = 0;
     size_t internalNodeVisits = 0;
     size_t totalNodeVisits = 0;
+    float sizeInMB = 0.0f;
 };
 
 
@@ -97,6 +98,7 @@ public:
     void checkHealth() const;
     void checkHealth(const Node* node) const;
 
+    float calculateSizeInMB() const;
     TreeStats getStats();
 };
 
