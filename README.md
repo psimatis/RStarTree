@@ -32,8 +32,8 @@ $ cd tests
 $ ./runAllTests.sh
 ```
 The `tests/` directory includes tests for the R*-Tree (e.g., comparing query results against a linear scan). 
-To compile and execute them, simply run `runAllTests.sh`. 
-Each test's details are documented within its corresponding `.cpp`.
+Run `runAllTests.sh` to compile and execute them. 
+Test details are documented within the corresponding `.cpp` files.
 
 ## Classes
 
