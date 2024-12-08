@@ -29,10 +29,10 @@ $ ./run.sh
 
 ```bash
 $ cd tests
-$ ./runTests.sh
+$ ./runAllTests.sh
 ```
 The `tests/` directory includes tests for the R*-Tree (e.g., comparing query results against a linear scan). 
-To compile and execute them, simply run `runTests.sh`. 
+To compile and execute them, simply run `runAllTests.sh`. 
 Each test's details are documented within its corresponding `.cpp`.
 
 ## Classes
