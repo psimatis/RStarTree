@@ -1,13 +1,15 @@
 /*
-========================================================
- Purpose: 
+=====================================================================
+R*-Tree Demo: Benchmark insertion methods
+=====================================================================
+
+What does it test?
  Benchmark and validate the insertion methods:
     1. Bulk Loading.
     2. Single Insertions.
     3. Batch Insertions.
 
-What does it test?
- For each insertion method:
+What does it do?
     - Validates range queries results against a linear scan.
     - Calculates performance metrics (e.g., insertion time).
     - Calculates tree statistics (e.g.,size in MB).
@@ -18,7 +20,7 @@ Command-line arguments:
     - `-d` / `--dimension`: Data dimensionality (default: 2).
     - `-c` / `--capacity`: Node capacity (default: 128).
     - `-v` / `--validate`: Validate query results (default: off).
- ========================================================
+=====================================================================
  */
 
 #include "RStarTree.h"
@@ -205,19 +207,20 @@ int main(int argc, char* argv[]) {
     RStarTree treeOneByOne(capacity, dimension);
     insert(treeOneByOne, dataPoints);
     performQueries(treeOneByOne, dataPoints, numQueries, spaceMax, validateResults);
-    report(treeOneByOne.getStats());
+    report(treeOneByOne.getInfo());
 
     cout << "*Test: Batch insertion*" << endl;
     RStarTree treeBatch(capacity, dimension);
     insertBatches(treeBatch, dataPoints, capacity);
     performQueries(treeBatch, dataPoints, numQueries, spaceMax, validateResults);
-    report(treeBatch.getStats());
+    report(treeBatch.getInfo());
 
     cout << "*Test: Bulk loading*" << endl;
     RStarTree treeBulk(capacity, dimension);
     insertBulkLoad(treeBulk, dataPoints);
     performQueries(treeBulk, dataPoints, numQueries, spaceMax, validateResults);
-    report(treeBulk.getStats());
+    report(treeBulk.getInfo());
 
+    cout << endl << "Benchmark completed." << endl << endl;
     return 0;
 }

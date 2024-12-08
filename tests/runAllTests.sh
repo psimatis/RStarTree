@@ -1,4 +1,10 @@
 echo "========================================="
+echo "Running test: bulkLoadAndBatch.cpp"
+echo "========================================="
+g++ bulkLoadAndBatch.cpp ../RStarTree.cpp -o bulkLoadAndBatch.exe -I../
+./bulkLoadAndBatch.exe
+
+echo "========================================="
 echo "Running test: mixStrategy.cpp"
 echo "========================================="
 g++ mixStrategy.cpp ../RStarTree.cpp -o mixStrategy.exe -I../

@@ -102,7 +102,7 @@ public:
     void checkHealth(const Node* node) const;
 
     float calculateSizeInMB() const;
-    TreeInfo getStats();
+    TreeInfo getInfo() const;
 };
 
 #endif // RSTARTREE_H

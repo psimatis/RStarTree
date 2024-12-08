@@ -576,29 +576,31 @@ float RStarTree::calculateSizeInMB() const {
 }
 
 
-TreeInfo RStarTree::getStats() {
+TreeInfo RStarTree::getInfo() const {
+    TreeInfo treeInfo;
 
-    info.capacity = maxEntries;
-    info.minCapacity = minEntries;
-    info.dimensions = dimensions;
+    treeInfo.capacity = maxEntries;
+    treeInfo.minCapacity = minEntries;
+    treeInfo.dimensions = dimensions;
 
-    function<void(const Node*, int)> computeStats = [&](const Node* node, size_t currentDepth) {
+    // Lambda function to compute stats recursively
+    function<void(const Node*, size_t)> computeStats = [&](const Node* node, size_t currentDepth) {
         if (!node) return;
 
-        info.totalNodes++;
+        treeInfo.totalNodes++;
         if (node->isLeaf) {
-            info.leafNodes++;
-            info.totalDataEntries += node->entries.size();
+            treeInfo.leafNodes++;
+            treeInfo.totalDataEntries += node->entries.size();
         } else {
-            info.internalNodes++;
+            treeInfo.internalNodes++;
             for (const auto* child : node->children)
                 computeStats(child, currentDepth + 1);
         }
 
-        info.height = max(info.height, currentDepth);
+        treeInfo.height = max(treeInfo.height, currentDepth);
     };
 
-    computeStats(root, 1);
-    info.sizeInMB = calculateSizeInMB();
-    return info;
+    computeStats(root, 1); 
+    treeInfo.sizeInMB = calculateSizeInMB(); 
+    return treeInfo;
 }

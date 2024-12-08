@@ -1,13 +1,19 @@
 /*
 ========================================================
-Purpose:
+R*-Tree Demo: Mix all insertion methods
+========================================================
+
+What does it test?
 Validate the tree created with a mixed strategy of:
     1. Bulk Loading.
     2. Single Insertions.
     3. Batch Insertions.
 
-What does it test?
-Cross-checks the results with brute-force linear scan.
+What does it do?
+    1. Bulk loads the tree with random points.
+    2. Performs R* insertions.
+    3. Performs batch insertions.
+    4. Cross-checks query results with linear scan.
 ========================================================
 */
 
@@ -91,9 +97,8 @@ int main() {
             return 1;
         }
     }
-    cout << "All " << numQueries << " queries matched!" << endl << endl;
 
-    TreeInfo stats = tree.getStats();
+    TreeInfo stats = tree.getInfo();
     cout << endl << "Tree info" << endl;
     cout << "   Dimension: " << stats.dimensions << endl;
     cout << "   Capacity: " << stats.capacity << endl;
@@ -103,5 +108,6 @@ int main() {
     cout << "   Total nodes: " << stats.totalNodes << endl;
     cout << "   Data Entries: " << stats.totalDataEntries << endl;
 
+    cout << endl << "All " << numQueries << " queries matched!" << endl << endl;
     return 0;
 }
