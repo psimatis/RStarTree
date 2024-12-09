@@ -159,19 +159,19 @@ Node* RStarTree::chooseSubtree(Node* currentNode, const Rectangle& entry) {
 void RStarTree::batchInsert(vector<Rectangle>& rectangles) {
     if (rectangles.empty()) return;
 
-    // Step 1: Sort rectangles by the x-axis (or the first dimension)
-    sort(rectangles.begin(), rectangles.end(), [](const Rectangle& a, const Rectangle& b) {
-        return a.minCoords[0] < b.minCoords[0];
-    });
+    int numBatches = (rectangles.size() + maxEntries - 1) / maxEntries;
 
-    // Step 2: Create a Node from the sorted rectangles
-    Node* newNode = new Node(rectangles);
+    for (int i = 0; i < numBatches; ++i) {
+        int startIdx = i * maxEntries;
+        int endIdx = min(static_cast<int>(rectangles.size()), startIdx + maxEntries);
+        vector<Rectangle> batch(rectangles.begin() + startIdx, rectangles.begin() + endIdx);
 
-    // Step 3: Insert the new Node into the tree
-    batchInsert(root, newNode);
+        Node* newNode = new Node(batch);
+        batchInsert(root, newNode, true);
+    }
 }
 
-void RStarTree::batchInsert(Node* currentNode, Node* newNode) {
+void RStarTree::batchInsert(Node* currentNode, Node* newNode, bool allowReinsertion) {
     if (!currentNode) {
         cerr << "Error: currentNode is null!" << endl;
         return;
@@ -193,10 +193,12 @@ void RStarTree::batchInsert(Node* currentNode, Node* newNode) {
         updateRectangles(currentNode);
 
         if (currentNode->children.size() > maxEntries)
-            splitNode(currentNode);
+            if (allowReinsertion) reinsert(currentNode); 
+            else splitNode(currentNode); 
+            // splitNode(currentNode);
     } else {
         Node* subtree = chooseSubtreeBatch(currentNode, Rectangle::combine(newNode->entries));
-        if (subtree) batchInsert(subtree, newNode);
+        if (subtree) batchInsert(subtree, newNode, allowReinsertion);
         else cerr << "Error: No valid subtree found in batchInsert!" << endl;
     }
 }

@@ -61,13 +61,7 @@ int main() {
 
     cout << "Batch inserting..." << endl;
     vector<Rectangle> batchData = generateRandomRectangles(numBatchPoints, dimensions, 0, rangeMax);
-    size_t numBatches = (batchData.size() + capacity - 1) / capacity; 
-    for (size_t batchIdx = 0; batchIdx < numBatches; ++batchIdx) {
-        size_t start = batchIdx * capacity;
-        size_t end = min(start + capacity, batchData.size());
-        vector<Rectangle> batch(batchData.begin() + start, batchData.begin() + end);
-        tree.batchInsert(batch);
-    }
+        tree.batchInsert(batchData);
 
     if (tree.getInfo().totalDataEntries != numBulkLoadPoints + numBatchPoints) {
         cout << "Error: totalDataEntries does not match expected value" << endl;

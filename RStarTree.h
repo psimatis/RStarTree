@@ -82,7 +82,7 @@ public:
     void insert(Node* currentNode, const Rectangle& entry, bool allowReinsertion);
     void reinsert(Node* node);
     void batchInsert(vector<Rectangle>& rectangles);
-    void batchInsert(Node* currentNode, Node* newNode);
+    void batchInsert(Node* currentNode, Node* newNode, bool allowReinsertion);
     void recursiveSTRSort(vector<Rectangle> &rects, int dim, int maxDim);
     void bulkLoad(vector<Rectangle>& rectangles);
 

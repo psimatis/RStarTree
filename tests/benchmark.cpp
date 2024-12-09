@@ -78,18 +78,8 @@ void insert(RStarTree& tree, const vector<Rectangle>& dataPoints) {
 }
 
 void insertBatches(RStarTree& tree, vector<Rectangle>& dataPoints, int capacity) {
-
-    int numBatches = (dataPoints.size() + capacity - 1) / capacity;
     auto start = high_resolution_clock::now();
-
-    for (int i = 0; i < numBatches; ++i) {
-        int startIdx = i * capacity;
-        int endIdx = min(static_cast<int>(dataPoints.size()), startIdx + capacity);
-        vector<Rectangle> batch(dataPoints.begin() + startIdx, dataPoints.begin() + endIdx);
-
-        tree.batchInsert(batch);
-    }
-
+    tree.batchInsert(dataPoints);
     auto duration = duration_cast<milliseconds>(high_resolution_clock::now() - start);
     cout << "Insertion time: " << duration.count() / 1000.0 << " s" << endl;
 }

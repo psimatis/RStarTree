@@ -48,5 +48,6 @@ output.txt
 
 *.py
 
+visualization/
 experiment_results/
 *.png
