@@ -4,11 +4,12 @@
 // Rectangle
 /////////////////////
 Rectangle::Rectangle(int dimensions)
-    : minCoords(dimensions, numeric_limits<float>::max()),
+    : id(-1), // Default ID is -1 for uninitialized rectangles
+      minCoords(dimensions, numeric_limits<float>::max()),
       maxCoords(dimensions, numeric_limits<float>::lowest()) {}
 
-Rectangle::Rectangle(const vector<float>& min, const vector<float>& max)
-    : minCoords(min), maxCoords(max) {}
+Rectangle::Rectangle(const int id, const vector<float>& min, const vector<float>& max)
+    : id(id), minCoords(min), maxCoords(max) {}
 
 float Rectangle::area() const {
     float result = 1.0f;
@@ -44,7 +45,7 @@ Rectangle Rectangle::combine(const vector<Rectangle>& rectangles) {
             combinedMax[i] = max(combinedMax[i], rect.maxCoords[i]);
         }
     }
-    return Rectangle(combinedMin, combinedMax);
+    return Rectangle(-1, combinedMin, combinedMax);
 }
 
 bool Rectangle::overlapCheck(const Rectangle& other) const {
@@ -63,7 +64,11 @@ vector<float> Rectangle::getCenter() const {
 }
 
 void Rectangle::printRectangle(const string& label) const {
-    cout << label << " [(";
+    cout << label << " [";
+    if (id != -1) { // Print ID only if it is valid (not the default -1)
+        cout << "ID: " << id << ", ";
+    }
+    cout << "(";
     for (size_t i = 0; i < minCoords.size(); ++i) {
         cout << minCoords[i];
         if (i < minCoords.size() - 1) cout << ", ";
@@ -240,15 +245,15 @@ void RStarTree::recursiveSTRSort(vector<Rectangle> &rects, int dim, int maxDim) 
     if (dim >= maxDim) return;
 
     // Sort rectangles by the current dimension
-    std::sort(rects.begin(), rects.end(), [dim](const Rectangle& a, const Rectangle& b) {
+    sort(rects.begin(), rects.end(), [dim](const Rectangle& a, const Rectangle& b) {
         return a.minCoords[dim] < b.minCoords[dim];
     });
 
     // Split into groups and recursively sort along the next dimension
     size_t groupSize = (rects.size() + maxEntries - 1) / maxEntries; // Number of groups
     for (size_t i = 0; i < rects.size(); i += groupSize) {
-        size_t end = std::min(i + groupSize, rects.size());
-        std::vector<Rectangle> group(rects.begin() + i, rects.begin() + end);
+        size_t end = min(i + groupSize, rects.size());
+        vector<Rectangle> group(rects.begin() + i, rects.begin() + end);
         recursiveSTRSort(group, dim + 1, maxDim);
     }
 }

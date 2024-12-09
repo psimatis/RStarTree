@@ -5,11 +5,11 @@ int main() {
     RStarTree tree(10, 2);
 
     // Insert a rectangle
-    Rectangle rect({0.0f, 0.0f}, {5.0f, 5.0f});
+    Rectangle rect(1, {0.0f, 0.0f}, {5.0f, 5.0f});
     tree.insert(rect);
 
     // Perform a range query
-    Rectangle query({1.0f, 1.0f}, {6.0f, 6.0f});
+    Rectangle query(1, {1.0f, 1.0f}, {6.0f, 6.0f});
     auto results = tree.rangeQuery(query);
 
     // Print the results

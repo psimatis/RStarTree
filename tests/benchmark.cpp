@@ -63,7 +63,7 @@ vector<Rectangle> generateRandomData(int numData, int minRange, int maxRange) {
     for (int i = 0; i < numData; ++i) {
         float x1 = static_cast<float>(minRange + rand() % (maxRange - minRange + 1));
         float y1 = static_cast<float>(minRange + rand() % (maxRange - minRange + 1));
-        Rectangle rect({x1, y1}, {x1, y1});
+        Rectangle rect(i, {x1, y1}, {x1, y1});
         dataPoints.push_back(rect);
     }
     return dataPoints;
@@ -120,7 +120,7 @@ void performQueries(RStarTree& tree, const vector<Rectangle>& dataPoints, int nu
         float queryMinY = static_cast<float>(rand() % maxRange);
         float queryMaxX = queryMinX + static_cast<float>(rand() % 100 + 1);
         float queryMaxY = queryMinY + static_cast<float>(rand() % 100 + 1);
-        Rectangle query({queryMinX, queryMinY}, {queryMaxX, queryMaxY});
+        Rectangle query(i, {queryMinX, queryMinY}, {queryMaxX, queryMaxY});
 
         auto start = high_resolution_clock::now();
         auto rtreeResults = tree.rangeQuery(query);

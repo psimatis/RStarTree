@@ -13,11 +13,12 @@ using namespace std;
 
 class Rectangle {
 public:
+    int id;
     vector<float> minCoords, maxCoords;
 
     Rectangle() = default;
     Rectangle(int dimensions);
-    Rectangle(const vector<float>& min, const vector<float>& max);
+    Rectangle(const int id, const vector<float>& min, const vector<float>& max);
 
     vector<float> getCenter() const;
     static Rectangle combine(const vector<Rectangle>& rectangles);

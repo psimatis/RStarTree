@@ -39,7 +39,7 @@ vector<Rectangle> generateRandomRectangles(int num, int dimensions, int rangeMin
             coords[d] = static_cast<float>(val);
         }
 
-        Rectangle rect(coords, coords);
+        Rectangle rect(i, coords, coords);
         rectangles.emplace_back(rect);
     }
     return rectangles;

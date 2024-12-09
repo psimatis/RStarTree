@@ -36,7 +36,7 @@ vector<Rectangle> generateRandomRectangles(int num, int dimensions, int rangeMin
             minCoords[d] = minVal;
             maxCoords[d] = maxVal;
         }
-        rectangles.emplace_back(minCoords, maxCoords);
+        rectangles.emplace_back(i, minCoords, maxCoords);
     }
     return rectangles;
 }
