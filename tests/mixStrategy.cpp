@@ -53,7 +53,7 @@ vector<Rectangle> linearScanQuery(const vector<Rectangle>& data, const Rectangle
 int main() {
     srand(0);
 
-    const int dimensions = 2;
+    const int dimensions = 3;
     const int capacity = 128;
     const int numBulkLoadPoints = 10000;
     const int numSingleInsertions = 100;

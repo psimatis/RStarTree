@@ -48,9 +48,9 @@ vector<Rectangle> generateRandomRectangles(int num, int dimensions, int rangeMin
 int main() {
     srand(0);
 
-    const int dimensions = 2;
+    const int dimensions = 4;
     const int capacity = 128;
-    const int numBulkLoadPoints = 1000;
+    const int numBulkLoadPoints = 10000;
     const int numBatchPoints = 1000;
     const int rangeMax = 100;
 

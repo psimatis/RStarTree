@@ -82,6 +82,7 @@ public:
     void reinsert(Node* node);
     void batchInsert(vector<Rectangle>& rectangles);
     void batchInsert(Node* currentNode, Node* newNode);
+    void recursiveSTRSort(vector<Rectangle> &rects, int dim, int maxDim);
     void bulkLoad(vector<Rectangle>& rectangles);
 
     Node* chooseSubtree(Node* currentNode, const Rectangle& entry);

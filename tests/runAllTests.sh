@@ -14,6 +14,6 @@ echo "========================================="
 echo "Running test: benchmark.cpp"
 echo "========================================="
 g++ benchmark.cpp ../RStarTree.cpp -o benchmark.exe -I../
-./benchmark.exe
+./benchmark.exe -v -d 5
 
 rm -f *.exe

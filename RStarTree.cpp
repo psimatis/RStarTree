@@ -235,16 +235,29 @@ Node* RStarTree::chooseSubtreeBatch(Node* currentNode, const Rectangle& entry) {
     return bestChild;
 }
 
-// STR bulk loading
+
+void RStarTree::recursiveSTRSort(vector<Rectangle> &rects, int dim, int maxDim) {
+    if (dim >= maxDim) return;
+
+    // Sort rectangles by the current dimension
+    std::sort(rects.begin(), rects.end(), [dim](const Rectangle& a, const Rectangle& b) {
+        return a.minCoords[dim] < b.minCoords[dim];
+    });
+
+    // Split into groups and recursively sort along the next dimension
+    size_t groupSize = (rects.size() + maxEntries - 1) / maxEntries; // Number of groups
+    for (size_t i = 0; i < rects.size(); i += groupSize) {
+        size_t end = std::min(i + groupSize, rects.size());
+        std::vector<Rectangle> group(rects.begin() + i, rects.begin() + end);
+        recursiveSTRSort(group, dim + 1, maxDim);
+    }
+}
+
 void RStarTree::bulkLoad(vector<Rectangle>& rectangles) {
     if (rectangles.empty()) return;
 
-    // Sort (x-axis primary, y-axis secondary)
-    sort(rectangles.begin(), rectangles.end(), [](const Rectangle& a, const Rectangle& b) {
-        if (a.minCoords[0] != b.minCoords[0])
-            return a.minCoords[0] < b.minCoords[0];
-        return a.minCoords[1] < b.minCoords[1];
-    });
+    // Sort rectangles recursively across all dimensions
+    recursiveSTRSort(rectangles, 0, dimensions);
 
     // Create leaf nodes
     vector<Node*> leafNodes;
