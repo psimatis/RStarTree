@@ -38,14 +38,13 @@ Test details are documented within the corresponding `.cpp` files.
 ## Classes
 
 - **`Rectangle`**: 
-  A bounding box with utility methods (e.g., `area()`, `overlap()`, and `combine()`.
+  A bounding box with utility methods (e.g., `area()`, `overlap()`, and `combine()`).
 
 - **`Node`**:
-  Each tree node is either `leaf` or `internal`. It holds pointers to its children and their rectangles.
+  Each tree node, which is either `leaf` or `internal`, holds pointers to its children and their rectangles.
 
 - **`RStarTree`**:
   The overall tree structure and its operations (e.g., `insertion()`, and `query()`).
-
 
 ## Limitations
 - No deletion.
