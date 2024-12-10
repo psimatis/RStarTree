@@ -178,6 +178,10 @@ Node* RStarTree::chooseSubtree(Node* currentNode, const Rectangle& entry, bool i
 void RStarTree::batchInsert(vector<Rectangle>& rectangles) {
     if (rectangles.empty()) return;
 
+    sort(rectangles.begin(), rectangles.end(), [](const Rectangle& a, const Rectangle& b) {
+        return a.minCoords[0] < b.minCoords[0];
+    });
+
     int numBatches = (rectangles.size() + maxEntries - 1) / maxEntries;
 
     for (int i = 0; i < numBatches; ++i) {
