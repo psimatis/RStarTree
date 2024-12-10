@@ -4,7 +4,7 @@
 // Rectangle
 /////////////////////
 Rectangle::Rectangle(int dimensions)
-    : id(-1), // Default ID is -1 for uninitialized rectangles
+    : id(-1), 
       minCoords(dimensions, numeric_limits<float>::max()),
       maxCoords(dimensions, numeric_limits<float>::lowest()) {}
 
@@ -125,19 +125,34 @@ void RStarTree::insert(Node* currentNode, const Rectangle& entry, bool allowRein
             else splitNode(currentNode); 
         }
     } else {
-        Node* subtree = chooseSubtree(currentNode, entry);
+        Node* subtree = chooseSubtree(currentNode, entry, false);
         if (subtree) insert(subtree, entry, allowReinsertion);  
         else cerr << "Error: No valid subtree found!" << endl;
     }
     // validateTree(); // Turn on for debugging.
 }
 
-Node* RStarTree::chooseSubtree(Node* currentNode, const Rectangle& entry) {
+Node* RStarTree::chooseSubtree(Node* currentNode, const Rectangle& entry, bool isBatch) {
     if (!currentNode || currentNode->isLeaf) {
         cerr << "Error: chooseSubtree called on an invalid or leaf node!" << endl;
         return nullptr;
     }
 
+    // If there are no children, it's an invalid state
+    if (currentNode->children.empty()) {
+        cerr << "Error: currentNode has no children!" << endl;
+        return nullptr;
+    }
+
+    // Check if the children are leaves (for batch insertion)
+    bool childrenAreLeaves = currentNode->children[0]->isLeaf;
+
+    // If it's a batch insertion and the children are leaves, return the current node
+    if (isBatch && childrenAreLeaves) {
+        return currentNode;
+    }
+
+    // Otherwise, find the best child based on minimal area increase
     Node* bestChild = nullptr;
     float minAreaIncrease = numeric_limits<float>::max();
 
@@ -151,10 +166,14 @@ Node* RStarTree::chooseSubtree(Node* currentNode, const Rectangle& entry) {
         }
     }
 
-    if (!bestChild) cerr << "Error: No valid subtree found in chooseSubtree!" << endl;
+    if (!bestChild) {
+        cerr << "Error: No valid subtree found in chooseSubtree!" << endl;
+        return nullptr;
+    }
 
     return bestChild;
 }
+
 
 void RStarTree::batchInsert(vector<Rectangle>& rectangles) {
     if (rectangles.empty()) return;
@@ -167,11 +186,11 @@ void RStarTree::batchInsert(vector<Rectangle>& rectangles) {
         vector<Rectangle> batch(rectangles.begin() + startIdx, rectangles.begin() + endIdx);
 
         Node* newNode = new Node(batch);
-        batchInsert(root, newNode, true);
+        insertLeaf(root, newNode, true);
     }
 }
 
-void RStarTree::batchInsert(Node* currentNode, Node* newNode, bool allowReinsertion) {
+void RStarTree::insertLeaf(Node* currentNode, Node* newNode, bool allowReinsertion) {
     if (!currentNode) {
         cerr << "Error: currentNode is null!" << endl;
         return;
@@ -195,51 +214,11 @@ void RStarTree::batchInsert(Node* currentNode, Node* newNode, bool allowReinsert
         if (currentNode->children.size() > maxEntries)
             if (allowReinsertion) reinsert(currentNode); 
             else splitNode(currentNode); 
-            // splitNode(currentNode);
     } else {
-        Node* subtree = chooseSubtreeBatch(currentNode, Rectangle::combine(newNode->entries));
-        if (subtree) batchInsert(subtree, newNode, allowReinsertion);
+        Node* subtree = chooseSubtree(currentNode, Rectangle::combine(newNode->entries), true);
+        if (subtree) insertLeaf(subtree, newNode, allowReinsertion);
         else cerr << "Error: No valid subtree found in batchInsert!" << endl;
     }
-}
-
-Node* RStarTree::chooseSubtreeBatch(Node* currentNode, const Rectangle& entry) {
-    if (!currentNode || currentNode->isLeaf) {
-        cerr << "Error: chooseSubtreeBatch called on an invalid or leaf node!" << endl;
-        return nullptr;
-    }
-
-    // If currentNode has no children, return nullptr
-    if (currentNode->children.empty()) {
-        cerr << "Error: currentNode has no children!" << endl;
-        return nullptr;
-    }
-
-    // Check if the current node's children are leaves
-    bool childrenAreLeaves = currentNode->children[0]->isLeaf;
-    if (childrenAreLeaves) 
-        return currentNode;
-
-    // Find the best child based on minimal area increase
-    Node* bestChild = nullptr;
-    float minAreaIncrease = numeric_limits<float>::max();
-
-    for (size_t i = 0; i < currentNode->entries.size(); ++i) {
-        Rectangle combined = Rectangle::combine({currentNode->entries[i], entry});
-        float areaIncrease = combined.area() - currentNode->entries[i].area();
-
-        if (areaIncrease < minAreaIncrease) {
-            minAreaIncrease = areaIncrease;
-            bestChild = currentNode->children[i];
-        }
-    }
-
-    if (!bestChild) {
-        cerr << "Error: No valid subtree found in chooseSubtreeBatch!" << endl;
-        return nullptr;
-    }
-
-    return bestChild;
 }
 
 
