@@ -24,8 +24,9 @@ public:
     static Rectangle combine(const vector<Rectangle>& rectangles);
 
     float area() const;
+    float getAreaIncrease(const Rectangle& other) const;
+
     float overlap(const Rectangle& other) const;
-    
     bool overlapCheck(const Rectangle& other) const;
 
     void printRectangle(const string& label) const;

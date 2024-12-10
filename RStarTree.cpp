@@ -48,6 +48,25 @@ Rectangle Rectangle::combine(const vector<Rectangle>& rectangles) {
     return Rectangle(-1, combinedMin, combinedMax);
 }
 
+float Rectangle::getAreaIncrease(const Rectangle& other) const {
+    const size_t dim = minCoords.size();
+    float combinedArea = 1.0f;
+    float originalArea = 1.0f;
+
+    for (size_t d = 0; d < dim; ++d) {
+        float newMin = min(minCoords[d], other.minCoords[d]);
+        float newMax = max(maxCoords[d], other.maxCoords[d]);
+
+        float oldExtent = (maxCoords[d] - minCoords[d]);
+        float newExtent = (newMax - newMin);
+
+        originalArea *= oldExtent;
+        combinedArea *= newExtent;
+    }
+
+    return combinedArea - originalArea;
+}
+
 bool Rectangle::overlapCheck(const Rectangle& other) const {
     for (size_t i = 0; i < maxCoords.size(); ++i) {
         if (other.minCoords[i] > maxCoords[i] || other.maxCoords[i] < minCoords[i])
@@ -138,42 +157,27 @@ Node* RStarTree::chooseSubtree(Node* currentNode, const Rectangle& entry, bool i
         return nullptr;
     }
 
-    // If there are no children, it's an invalid state
     if (currentNode->children.empty()) {
         cerr << "Error: currentNode has no children!" << endl;
         return nullptr;
     }
 
-    // Check if the children are leaves (for batch insertion)
-    bool childrenAreLeaves = currentNode->children[0]->isLeaf;
-
-    // If it's a batch insertion and the children are leaves, return the current node
-    if (isBatch && childrenAreLeaves) {
+    // If it's a batch insertion return the current node
+    if (isBatch && currentNode->children[0]->isLeaf)
         return currentNode;
-    }
 
-    // Otherwise, find the best child based on minimal area increase
+    // Find the child with the minimal area increase
     Node* bestChild = nullptr;
     float minAreaIncrease = numeric_limits<float>::max();
-
     for (size_t i = 0; i < currentNode->entries.size(); ++i) {
-        Rectangle combined = Rectangle::combine({currentNode->entries[i], entry});
-        float areaIncrease = combined.area() - currentNode->entries[i].area();
-
+        float areaIncrease = currentNode->entries[i].getAreaIncrease(entry);
         if (areaIncrease < minAreaIncrease) {
             minAreaIncrease = areaIncrease;
             bestChild = currentNode->children[i];
         }
     }
-
-    if (!bestChild) {
-        cerr << "Error: No valid subtree found in chooseSubtree!" << endl;
-        return nullptr;
-    }
-
     return bestChild;
 }
-
 
 void RStarTree::batchInsert(vector<Rectangle>& rectangles) {
     if (rectangles.empty()) return;
@@ -208,7 +212,7 @@ void RStarTree::insertLeaf(Node* currentNode, Node* newNode, bool allowReinserti
         return;
     }
 
-    // Checks if children are leaves
+    // If children are leaves
     if (!currentNode->children.empty() && currentNode->children[0]->isLeaf) {
         currentNode->children.push_back(newNode);
         currentNode->entries.push_back(Rectangle::combine(newNode->entries));
@@ -217,13 +221,13 @@ void RStarTree::insertLeaf(Node* currentNode, Node* newNode, bool allowReinserti
 
         if (currentNode->children.size() > maxEntries)
             splitNode(currentNode); 
+
     } else {
         Node* subtree = chooseSubtree(currentNode, Rectangle::combine(newNode->entries), true);
         if (subtree) insertLeaf(subtree, newNode, allowReinsertion);
         else cerr << "Error: No valid subtree found in batchInsert!" << endl;
     }
 }
-
 
 void RStarTree::recursiveSTRSort(vector<Rectangle> &rects, int dim, int maxDim) {
     if (dim >= maxDim) return;
@@ -297,21 +301,23 @@ void RStarTree::updateRectangles(Node* node) {
 }
 
 void RStarTree::reinsert(Node* node) {
+
+    // Reinsert the farthest 30% of entries
+    size_t reinsertCount = static_cast<size_t>(node->entries.size() * 0.3); 
+    if (reinsertCount == 0) return;
+
     // Sort entries by distance from the center
     vector<float> center = Rectangle::combine(node->entries).getCenter();
-
     vector<pair<float, size_t>> distances; // {distance, index}
     for (size_t i = 0; i < node->entries.size(); ++i) {
         float distance = 0.0f;
         vector<float> entryCenter = node->entries[i].getCenter();
         for (size_t d = 0; d < center.size(); ++d) 
             distance += (entryCenter[d] - center[d]) * (entryCenter[d] - center[d]);
-        distances.emplace_back(sqrt(distance), i);
+        distances.emplace_back(distance, i);
     }
     sort(distances.rbegin(), distances.rend());
 
-    // Reinsert the farthest 30% of entries
-    size_t reinsertCount = static_cast<size_t>(distances.size() * 0.3); 
     vector<Rectangle> reinsertEntries;
     for (size_t i = 0; i < reinsertCount; ++i) 
         reinsertEntries.push_back(node->entries[distances[i].second]);
@@ -582,6 +588,9 @@ TreeInfo RStarTree::getInfo() const {
     treeInfo.capacity = maxEntries;
     treeInfo.minCapacity = minEntries;
     treeInfo.dimensions = dimensions;
+    treeInfo.totalNodeVisits = info.totalNodeVisits;
+    treeInfo.leafNodeVisits = info.leafNodeVisits;
+    treeInfo.internalNodeVisits = info.internalNodeVisits;
 
     // Lambda function to compute stats recursively
     function<void(const Node*, size_t)> computeStats = [&](const Node* node, size_t currentDepth) {
