@@ -100,7 +100,6 @@ public:
     void printTree() const;
 
     void checkHealth() const;
-    void checkHealth(const Node* node) const;
 
     float calculateSizeInMB() const;
     TreeInfo getInfo() const;

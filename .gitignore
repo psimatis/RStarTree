@@ -51,3 +51,4 @@ output.txt
 visualization/
 experiment_results/
 *.png
+tests/runB.sh

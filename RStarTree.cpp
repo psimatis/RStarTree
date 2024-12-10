@@ -212,8 +212,7 @@ void RStarTree::insertLeaf(Node* currentNode, Node* newNode, bool allowReinserti
         updateRectangles(currentNode);
 
         if (currentNode->children.size() > maxEntries)
-            if (allowReinsertion) reinsert(currentNode); 
-            else splitNode(currentNode); 
+            splitNode(currentNode); 
     } else {
         Node* subtree = chooseSubtree(currentNode, Rectangle::combine(newNode->entries), true);
         if (subtree) insertLeaf(subtree, newNode, allowReinsertion);
@@ -449,34 +448,32 @@ void RStarTree::splitNode(Node* node) {
 }
 
 void RStarTree::checkHealth() const {
-    checkHealth(root);
-}
+    function<void(const Node*)> validateNode = [&](const Node* node) {
+        if (!node) return;
 
-void RStarTree::checkHealth(const Node* node) const {
-    if (!node) return;
+        if (!node->isLeaf) {
+            vector<Rectangle> childRects;
+            for (const auto* child : node->children) 
+                childRects.push_back(Rectangle::combine(child->entries));
 
-    if (!node->isLeaf) {
-        vector<Rectangle> childRects;
-        for (const auto* child : node->children) {
-            childRects.push_back(Rectangle::combine(child->entries));
-        }
-
-        Rectangle combinedRect = Rectangle::combine(childRects);
-        if (!node->entries[0].overlapCheck(combinedRect)) {
-            cerr << "Validation Error: Parent rectangle does not encompass all children!" << endl;
-            node->entries[0].printRectangle("Parent Rect");
-            combinedRect.printRectangle("Combined Child Rects");
-        }
-
-        for (const auto* child : node->children) {
-            if (child->parent != node) {
-                cerr << "Validation Error: Child's parent pointer is incorrect!" << endl;
-                child->entries[0].printRectangle("Child Rect");
+            Rectangle combinedRect = Rectangle::combine(childRects);
+            if (!node->entries[0].overlapCheck(combinedRect)) {
+                cerr << "Validation Error: Parent rectangle does not encompass all children!" << endl;
                 node->entries[0].printRectangle("Parent Rect");
+                combinedRect.printRectangle("Combined Child Rects");
             }
-            checkHealth(child);
+
+            for (const auto* child : node->children) {
+                if (child->parent != node) {
+                    cerr << "Validation Error: Child's parent pointer is incorrect!" << endl;
+                    child->entries[0].printRectangle("Child Rect");
+                    node->entries[0].printRectangle("Parent Rect");
+                }
+                validateNode(child);
+            }
         }
-    }
+    };
+    validateNode(root);
 }
 
 vector<Rectangle> RStarTree::rangeQuery(const Rectangle& query){
