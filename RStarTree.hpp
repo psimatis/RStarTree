@@ -41,7 +41,6 @@ public:
     bool isLeaf;
     vector<Rectangle> entries;
     vector<Node*> children;
-    Node* parent;
 
     Node(bool leaf);
     Node(const vector<Rectangle>& entries);
@@ -74,22 +73,24 @@ private:
     int dimensions;
 
     struct TreeInfo info;
+    
+    // Helper method to find a node's parent
+    bool findNodeParent(Node* current, Node* target, Node*& parent);
 
 public:
     RStarTree(int maxEntries, int dimensions);
     ~RStarTree();
 
     void insert(const Rectangle& entry);
-    void insert(Node* currentNode, const Rectangle& entry, bool allowReinsertion);
-    void reinsert(Node* node);
+    Node* insert(Node* currentNode, Node* parent, const Rectangle& entry, bool allowReinsertion);
+    void reinsert(Node* node, Node* parent);
     void batchInsert(vector<Rectangle>& rectangles);
-    void insertLeaf(Node* currentNode, Node* newNode, bool allowReinsertion);
     void recursiveSTRSort(vector<Rectangle>& rects, int dim, int maxDim);
     void bulkLoad(vector<Rectangle>& rectangles);
 
     Node* chooseSubtree(Node* currentNode, const Rectangle& entry, bool isBatch);
 
-    void splitNode(Node* node);
+    Node* splitNode(Node* node, Node* parent);
 
     void chooseBestSplit(const vector<Rectangle>& sortedEntries, vector<size_t>& sortedIndices, int& bestAxis, size_t& bestSplitIndex);
     void sortEntriesAndChildren(Node* node, const vector<Rectangle>& sortedEntries, vector<size_t>& sortedIndices, int bestAxis);
@@ -209,9 +210,11 @@ void Rectangle::printRectangle(const string& label) const {
 /////////////////////
 // Node
 /////////////////////
-Node::Node(bool leaf) : isLeaf(leaf), parent(nullptr) {}
+Node::Node(bool leaf)
+    : isLeaf(leaf) {}
 
-Node::Node(const vector<Rectangle>& rects) : isLeaf(true), entries(rects), parent(nullptr) {}
+Node::Node(const vector<Rectangle>& rects)
+    : isLeaf(true), entries(rects) {}
 
 Node::~Node() {
     for (auto* child : children)
@@ -232,33 +235,44 @@ RStarTree::~RStarTree() {
 }
 
 void RStarTree::insert(const Rectangle& entry) {
-    std::cout << "Inserting rectangle: ";
-    entry.printRectangle("");
-    std::cout << std::endl;
-    insert(root, entry, true);
-    std::cout << "Insertion completed." << std::endl;
+    root = insert(root, nullptr, entry, true);
 }
 
-void RStarTree::insert(Node* currentNode, const Rectangle& entry, bool allowReinsertion) {
+Node* RStarTree::insert(Node* currentNode, Node* parent, const Rectangle& entry, bool allowReinsertion) {
     if (!currentNode) {
-        std::cerr << "Error: currentNode is null!" << std::endl;
-        return;
+        // Create a new leaf node if the tree is empty
+        Node* newNode = new Node(true);
+        newNode->entries.push_back(entry);
+        return newNode;
     }
     
     if (currentNode->isLeaf) {
         currentNode->entries.push_back(entry);
         updateRectangles(currentNode);
         
-        std::cout << "Inserted into leaf node. Current entries: " << currentNode->entries.size() << std::endl;
         if (currentNode->entries.size() > maxEntries) {
-            std::cout << "Splitting node due to overflow..." << std::endl;
-            splitNode(currentNode);
-            if (allowReinsertion) reinsert(currentNode);
+            currentNode = splitNode(currentNode, parent);
+            if (allowReinsertion) reinsert(currentNode, parent);
         }
     } else {
         Node* bestSubtree = chooseSubtree(currentNode, entry, false);
-        insert(bestSubtree, entry, allowReinsertion);
+        Node* updatedSubtree = insert(bestSubtree, currentNode, entry, allowReinsertion);
+        
+        // If the subtree was replaced (e.g., due to a split), update the reference in the current node
+        if (updatedSubtree != bestSubtree) {
+            for (size_t i = 0; i < currentNode->children.size(); i++) {
+                if (currentNode->children[i] == bestSubtree) {
+                    currentNode->children[i] = updatedSubtree;
+                    break;
+                }
+            }
+        }
+        
+        // Update the current node's entries
+        updateRectangles(currentNode);
     }
+    
+    return currentNode;
 }
 
 Node* RStarTree::chooseSubtree(Node* currentNode, const Rectangle& entry, bool isBatch) {
@@ -286,18 +300,6 @@ void RStarTree::batchInsert(vector<Rectangle>& rectangles) {
     bulkLoad(rectangles);
 }
 
-void RStarTree::insertLeaf(Node* currentNode, Node* newNode, bool allowReinsertion) {
-    if (!currentNode) return;
-
-    currentNode->children.push_back(newNode);
-    updateRectangles(currentNode);
-
-    if (currentNode->children.size() > maxEntries) {
-        splitNode(currentNode);
-        if (allowReinsertion) reinsert(currentNode);
-    }
-}
-
 void RStarTree::recursiveSTRSort(vector<Rectangle>& rects, int dim, int maxDim) {
     if (dim >= maxDim) return;
 
@@ -315,7 +317,6 @@ void RStarTree::recursiveSTRSort(vector<Rectangle>& rects, int dim, int maxDim) 
 }
 
 void RStarTree::bulkLoad(vector<Rectangle>& rectangles) {
-    std::cout << "Bulk loading " << rectangles.size() << " rectangles..." << std::endl;
     if (rectangles.empty()) return;
 
     recursiveSTRSort(rectangles, 0, dimensions);
@@ -327,25 +328,20 @@ void RStarTree::bulkLoad(vector<Rectangle>& rectangles) {
         size_t end = min(start + sliceSize, rectangles.size());
         Node* newNode = new Node(vector<Rectangle>(rectangles.begin() + start, rectangles.begin() + end));
         newNodes.push_back(newNode);
-        std::cout << "Created new node with " << newNode->entries.size() << " entries." << std::endl;
     }
 
     if (newNodes.size() == 1) {
         delete root;
         root = newNodes.front();
-        std::cout << "Root replaced with new node." << std::endl;
     } else {
         Node* newRoot = new Node(false);
         for (auto* node : newNodes) {
             newRoot->children.push_back(node);
-            node->parent = newRoot;
         }
         delete root;
         root = newRoot;
-        std::cout << "New root created with " << newRoot->children.size() << " children." << std::endl;
     }
     updateRectangles(root);
-    std::cout << "Bulk loading completed." << std::endl;
 }
 
 void RStarTree::updateRectangles(Node* node) {
@@ -356,23 +352,90 @@ void RStarTree::updateRectangles(Node* node) {
     }
 }
 
-void RStarTree::reinsert(Node* node) {
+void RStarTree::reinsert(Node* node, Node* parent) {
     if (!node || node->isLeaf) return;
 
     vector<Rectangle> entriesToReinsert;
+    vector<Node*> childrenToReinsert;
 
-    for (auto it = node->entries.begin(); it != node->entries.end();) {
-        if (it->overlapCheck(Rectangle::combine(node->entries))) {
-            entriesToReinsert.push_back(*it);
-            it = node->entries.erase(it);
-        } else {
-            ++it;
+    // Identify entries to reinsert (typically 30% of entries)
+    size_t reinsertCount = node->entries.size() / 3;
+    if (reinsertCount == 0) return;
+
+    // Take the last reinsertCount entries for reinsertion
+    for (size_t i = 0; i < reinsertCount; i++) {
+        size_t idx = node->entries.size() - 1;
+        entriesToReinsert.push_back(node->entries[idx]);
+        if (!node->isLeaf) {
+            childrenToReinsert.push_back(node->children[idx]);
+        }
+        node->entries.pop_back();
+        if (!node->isLeaf) {
+            node->children.pop_back();
         }
     }
 
-    for (const auto& entry : entriesToReinsert) {
-        insert(root, entry, false);
+    // Update MBR after removing entries
+    updateRectangles(node);
+
+    // Reinsert entries
+    for (size_t i = 0; i < entriesToReinsert.size(); i++) {
+        if (node->isLeaf) {
+            // For leaf nodes, just reinsert the entry
+            root = insert(root, nullptr, entriesToReinsert[i], false);
+        } else {
+            // For internal nodes, find the best subtree for each child
+            Node* child = childrenToReinsert[i];
+            Rectangle mbr = entriesToReinsert[i];
+            
+            // Find the best node to insert this child into
+            Node* bestNode = chooseSubtree(root, mbr, true);
+            
+            // Add the child to the best node
+            bestNode->entries.push_back(mbr);
+            bestNode->children.push_back(child);
+            
+            // Update MBR of the best node
+            updateRectangles(bestNode);
+            
+            // Check if the best node needs to be split
+            if (bestNode->entries.size() > maxEntries) {
+                // Find the parent of bestNode
+                Node* bestNodeParent = nullptr;
+                findNodeParent(root, bestNode, bestNodeParent);
+                
+                // Split the node
+                Node* newNode = splitNode(bestNode, bestNodeParent);
+                
+                // If the root was split, update it
+                if (bestNode == root) {
+                    root = newNode;
+                }
+            }
+        }
     }
+}
+
+// Helper method to find a node's parent
+bool RStarTree::findNodeParent(Node* current, Node* target, Node*& parent) {
+    if (!current || !target) return false;
+    
+    // Check if any of the children is the target
+    for (Node* child : current->children) {
+        if (child == target) {
+            parent = current;
+            return true;
+        }
+    }
+    
+    // Recursively check all children
+    for (Node* child : current->children) {
+        if (findNodeParent(child, target, parent)) {
+            return true;
+        }
+    }
+    
+    return false;
 }
 
 void RStarTree::chooseBestSplit(const vector<Rectangle>& sortedEntries, vector<size_t>& sortedIndices, int& bestAxis, size_t& bestSplitIndex) {
@@ -411,8 +474,8 @@ void RStarTree::sortEntriesAndChildren(Node* node, const vector<Rectangle>& sort
     node->children = sortedChildren;
 }
 
-void RStarTree::splitNode(Node* node) {
-    if (!node) return;
+Node* RStarTree::splitNode(Node* node, Node* parent) {
+    if (!node) return node;
 
     // Create a new node
     Node* newNode = new Node(node->isLeaf);
@@ -440,10 +503,6 @@ void RStarTree::splitNode(Node* node) {
     newNode->entries = entriesToMove;
     if (!node->isLeaf) {
         newNode->children = childrenToMove;
-        // Update parent pointers
-        for (Node* child : newNode->children) {
-            if (child) child->parent = newNode;
-        }
     }
 
     // Remove moved entries and children from original node
@@ -452,51 +511,24 @@ void RStarTree::splitNode(Node* node) {
         node->children.resize(splitIndex);
     }
 
+    // Update MBRs
+    updateRectangles(node);
+    updateRectangles(newNode);
+
     // Handle parent relationships
-    if (!node->parent) {
-        // Create new root
+    if (!parent) {
+        // Node is the root, create new root
         Node* newRoot = new Node(false);
         newRoot->children.push_back(node);
         newRoot->children.push_back(newNode);
-        node->parent = newRoot;
-        newNode->parent = newRoot;
-        root = newRoot;
-        updateRectangles(root);
+        updateRectangles(newRoot);
+        return newRoot;
     } else {
         // Add new node to existing parent
-        newNode->parent = node->parent;
-        node->parent->children.push_back(newNode);
-        updateRectangles(node->parent);
+        parent->children.push_back(newNode);
+        updateRectangles(parent);
+        return node;
     }
-
-    // Update MBRs for both nodes
-    updateRectangles(node);
-    updateRectangles(newNode);
-}
-
-void RStarTree::checkHealth() const {
-    if (!root) {
-        std::cerr << "Error: Tree is empty!" << std::endl;
-        return;
-    }
-
-    function<void(const Node*)> validateNode = [&](const Node* node) {
-        if (!node) return;
-
-        if (node->isLeaf) {
-            if (node->entries.size() > maxEntries) {
-                cerr << "Error: Leaf node has too many entries" << endl;
-            }
-        } else {
-            if (node->children.size() > maxEntries) {
-                cerr << "Error: Internal node has too many children" << endl;
-            }
-
-            for (const auto* child : node->children)
-                validateNode(child);
-        }
-    };
-    validateNode(root);
 }
 
 vector<Rectangle> RStarTree::rangeQuery(const Rectangle& query){
@@ -508,10 +540,6 @@ vector<Rectangle> RStarTree::rangeQuery(const Rectangle& query){
 void RStarTree::rangeQuery(Node* node, const Rectangle& query, vector<Rectangle>& results) {
     if (!node) return;
 
-    info.totalNodeVisits++;
-    if (node->isLeaf) info.leafNodeVisits++;
-    else info.internalNodeVisits++;
-
     for (size_t i = 0; i < node->entries.size(); ++i) {
         const Rectangle& currentEntry = node->entries[i];
         if (query.overlapCheck(currentEntry)) {
@@ -519,111 +547,6 @@ void RStarTree::rangeQuery(Node* node, const Rectangle& query, vector<Rectangle>
             else rangeQuery(node->children[i], query, results);
         }
     }
-}
-
-void RStarTree::printTree() const {
-    cout << "R*-Tree Structure:" << endl;
-
-    function<void(const Node*, int)> printNode = [&](const Node* node, int depth) {
-        if (!node) return;
-
-        // Indent for tree depth
-        for (int i = 0; i < depth; ++i) cout << "  ";
-
-        if (node->isLeaf) {
-            cout << "Leaf Node ";
-            Rectangle::combine(node->entries).printRectangle("");
-            cout << " -> ";
-            for (const auto& rect : node->entries) {
-                cout << "[(";
-                for (float val : rect.minCoords) cout << val << ", ";
-                cout << "), (";
-                for (float val : rect.maxCoords) cout << val << ", ";
-                cout << ")] ";
-            }
-        } else {
-            cout << "Internal Node ";
-            Rectangle::combine(node->entries).printRectangle("");
-            cout << " -> ";
-            for (const auto& rect : node->entries) {
-                cout << "[(";
-                for (float val : rect.minCoords) cout << val << ", ";
-                cout << "), (";
-                for (float val : rect.maxCoords) cout << val << ", ";
-                cout << ")] ";
-            }
-        }
-        cout << endl;
-
-        for (const auto* child : node->children) {
-            printNode(child, depth + 1);
-        }
-    };
-
-    printNode(root, 0);
-    cout << "-------------" << endl;
-}
-
-float RStarTree::calculateSizeInMB() const {
-    size_t totalSize = 0;
-
-    function<void(const Node*)> calculateNodeSize = [&](const Node* node) {
-        if (!node) return;
-
-        totalSize += sizeof(bool);
-        totalSize += sizeof(Node*); 
-        totalSize += sizeof(vector<Node*>);
-        totalSize += sizeof(vector<Rectangle>); 
-
-        // Ignore data points
-        if (!node->isLeaf) {
-            totalSize += node->entries.size() * sizeof(Rectangle);
-
-            for (const auto& rectangle : node->entries)
-                totalSize += 2 * (dimensions * sizeof(float));
-        }
-
-        totalSize += node->children.size() * sizeof(Node*);
-
-        for (const auto* child : node->children)
-            calculateNodeSize(child);
-    };
-
-    calculateNodeSize(root);
-
-    return static_cast<float>(totalSize) / (1024.0f * 1024.0f); 
-}
-
-
-TreeInfo RStarTree::getInfo() const {
-    TreeInfo treeInfo;
-
-    treeInfo.capacity = maxEntries;
-    treeInfo.minCapacity = minEntries;
-    treeInfo.dimensions = dimensions;
-    treeInfo.leafNodeVisits = info.leafNodeVisits;
-    treeInfo.internalNodeVisits = info.internalNodeVisits;
-
-    // Lambda function to compute stats recursively
-    function<void(const Node*, size_t)> computeStats = [&](const Node* node, size_t currentDepth) {
-        if (!node) return;
-
-        treeInfo.totalNodes++;
-        if (node->isLeaf) {
-            treeInfo.leafNodes++;
-            treeInfo.totalDataEntries += node->entries.size();
-        } else {
-            treeInfo.internalNodes++;
-            for (const auto* child : node->children)
-                computeStats(child, currentDepth + 1);
-        }
-
-        treeInfo.height = max(treeInfo.height, currentDepth);
-    };
-
-    computeStats(root, 1); 
-    treeInfo.sizeInMB = calculateSizeInMB(); 
-    return treeInfo;
 }
 
 #endif // RSTARTREE_HPP

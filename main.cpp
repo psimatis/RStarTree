@@ -3,7 +3,6 @@
 #include <iostream>
 
 int main() {
-    std::cout << "Starting R*-Tree operations..." << std::endl;
     // Create a new R*-Tree with node capacity = 10 and 2 dimensions
     RStarTree tree(10, 2);
 
@@ -12,7 +11,6 @@ int main() {
     std::mt19937 gen(rd());
     std::uniform_real_distribution<> dis(0.0, 10.0);
 
-    std::cout << "Generating random rectangles for bulk loading..." << std::endl;
     // Generate random rectangles for bulk loading
     vector<Rectangle> rectangles;
     for (int i = 0; i < 100; ++i) {
@@ -25,22 +23,12 @@ int main() {
     std::cout << "Bulk loading rectangles..." << std::endl;
     tree.bulkLoad(rectangles);
 
-    // Check the health of the tree
-    std::cout << "Checking tree health..." << std::endl;
-    tree.checkHealth();
-
-
     // Insert a single rectangle
     std::cout << "Inserting a single rectangle..." << std::endl;
     Rectangle singleRect(101, {3.0f, 3.0f}, {8.0f, 8.0f});
     tree.insert(singleRect);
 
-    // Check the health of the tree
-    std::cout << "Checking tree health..." << std::endl;
-    tree.checkHealth();
-
     // Generate random rectangles for batch insertion
-    std::cout << "Generating random rectangles for batch insertion..." << std::endl;
     vector<Rectangle> moreRectangles;
     for (int i = 112; i < 122; ++i) {
         float minX = dis(gen);
@@ -58,10 +46,8 @@ int main() {
     auto results = tree.rangeQuery(query);
 
     // Print the results
-    std::cout << "Printing query results..." << std::endl;
     for (const auto& res : results) 
         res.printRectangle("Result");
         
-    std::cout << "R*-Tree operations completed." << std::endl;
     return 0;
 }
