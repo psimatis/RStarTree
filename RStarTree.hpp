@@ -23,7 +23,7 @@ public:
     static Rectangle combine(const vector<Rectangle>& rectangles);
     float area() const;
     float getAreaIncrease(const Rectangle& other) const;
-    float overlap(const Rectangle& other) const;
+    float getOverlapArea(const Rectangle& other) const;
     bool overlapCheck(const Rectangle& other) const;
     void printRectangle(const string& label) const;
     bool operator==(const Rectangle& other) const {
@@ -36,39 +36,21 @@ public:
     bool isLeaf;
     vector<Rectangle> entries;
     vector<Node*> children;
+
     Node(bool leaf);
     Node(const vector<Rectangle>& entries);
     ~Node();
 };
 
-
-struct TreeInfo {
-    size_t totalNodes = 0;
-    size_t leafNodes = 0;
-    size_t internalNodes = 0;
-    size_t totalDataEntries = 0;
-    size_t height = 0;
-    size_t leafNodeVisits = 0;
-    size_t internalNodeVisits = 0;
-    size_t totalNodeVisits = 0;
-    float sizeInMB = 0.0f;
-    int dimensions = 0;
-    int capacity = 0;
-    int minCapacity = 0;
-};
-
-
 class RStarTree {
-private:
+public:
     Node* root;
     int maxEntries;
     int minEntries;
     int dimensions;
 
-public:
     RStarTree(int maxEntries, int dimensions);
     ~RStarTree();
-
     void insert(const Rectangle& entry);
     Node* insert(Node* currentNode, Node* parent, const Rectangle& entry, bool allowReinsertion);
     void reinsert(Node* node, Node* parent);
@@ -82,6 +64,8 @@ public:
     void updateRectangles(Node* node);
     vector<Rectangle> rangeQuery(const Rectangle& query);
     void rangeQuery(Node* node, const Rectangle& query, vector<Rectangle>& results);
+    Node* insertNode(Node* currentNode, Node* parent, Node* newNode);
+    void checkHealth() const;
 };
 
 /////////////////////
@@ -102,7 +86,7 @@ float Rectangle::area() const {
     return result;
 }
 
-float Rectangle::overlap(const Rectangle& other) const {
+float Rectangle::getOverlapArea(const Rectangle& other) const {
     float overlapArea = 1.0;
 
     for (size_t i = 0; i < minCoords.size(); ++i) {
@@ -117,9 +101,6 @@ float Rectangle::overlap(const Rectangle& other) const {
 }
 
 Rectangle Rectangle::combine(const vector<Rectangle>& rectangles) {
-    if (rectangles.empty()) 
-        return Rectangle();
-
     vector<float> combinedMin = rectangles[0].minCoords;
     vector<float> combinedMax = rectangles[0].maxCoords;
 
@@ -273,7 +254,22 @@ Node* RStarTree::chooseSubtree(Node* currentNode, const Rectangle& entry, bool i
 }
 
 void RStarTree::batchInsert(vector<Rectangle>& rectangles) {
-    bulkLoad(rectangles);
+    if (rectangles.empty()) return;
+
+    sort(rectangles.begin(), rectangles.end(), [](const Rectangle& a, const Rectangle& b) {
+        return a.minCoords[0] < b.minCoords[0];
+    });
+
+    int numBatches = (rectangles.size() + maxEntries - 1) / maxEntries;
+
+    for (int i = 0; i < numBatches; ++i) {
+        int startIdx = i * maxEntries;
+        int endIdx = min(static_cast<int>(rectangles.size()), startIdx + maxEntries);
+        vector<Rectangle> batch(rectangles.begin() + startIdx, rectangles.begin() + endIdx);
+
+        Node* newNode = new Node(batch);
+        root = insertNode(root, nullptr, newNode);
+    }
 }
 
 void RStarTree::recursiveSTRSort(vector<Rectangle>& rects, int dim, int maxDim) {
@@ -303,6 +299,11 @@ void RStarTree::bulkLoad(vector<Rectangle>& rectangles) {
     for (size_t start = 0; start < rectangles.size(); start += sliceSize) {
         size_t end = min(start + sliceSize, rectangles.size());
         Node* newNode = new Node(vector<Rectangle>(rectangles.begin() + start, rectangles.begin() + end));
+        // Ensure each new node has children initialized
+        if (!newNode->isLeaf) {
+            for (size_t i = 0; i < newNode->entries.size(); ++i) 
+                newNode->children.push_back(new Node(true)); // Initialize with leaf children
+        }
         newNodes.push_back(newNode);
     }
 
@@ -311,9 +312,8 @@ void RStarTree::bulkLoad(vector<Rectangle>& rectangles) {
         root = newNodes.front();
     } else {
         Node* newRoot = new Node(false);
-        for (auto* node : newNodes) {
+        for (auto* node : newNodes) 
             newRoot->children.push_back(node);
-        }
         delete root;
         root = newRoot;
     }
@@ -323,8 +323,39 @@ void RStarTree::bulkLoad(vector<Rectangle>& rectangles) {
 void RStarTree::updateRectangles(Node* node) {
     if (!node || node->isLeaf) return;
 
-    for (auto* child : node->children) 
-        node->entries.push_back(Rectangle::combine(child->entries));
+    // Clear existing entries before updating
+    node->entries.clear();
+    
+    // Ensure children vector is not empty
+    if (node->children.empty()) return;
+    
+    // Update entries based on children
+    for (auto* child : node->children) {
+        if (child && !child->entries.empty()) 
+            node->entries.push_back(Rectangle::combine(child->entries));
+    }
+    
+    // Ensure entries and children sizes match
+    if (node->entries.size() != node->children.size()) {
+        cerr << "Warning: Entries and children sizes don't match in updateRectangles." << endl;
+        // Adjust entries to match children if needed
+        while (node->entries.size() < node->children.size() && node->children.size() > 0) {
+            size_t idx = node->entries.size();
+            if (idx < node->children.size() && node->children[idx] && !node->children[idx]->entries.empty())
+                node->entries.push_back(Rectangle::combine(node->children[idx]->entries));
+            else {
+                // If child has no entries, remove it
+                if (idx < node->children.size()) {
+                    delete node->children[idx];
+                    node->children.erase(node->children.begin() + idx);
+                }
+            }
+        }
+        
+        // If we have more entries than children, remove excess entries
+        if (node->entries.size() > node->children.size())
+            node->entries.resize(node->children.size());
+    }
 }
 
 void RStarTree::reinsert(Node* node, Node* parent) {
@@ -384,26 +415,120 @@ void RStarTree::reinsert(Node* node, Node* parent) {
     }
 }
 
-
-
-void RStarTree::chooseBestSplit(const vector<Rectangle>& sortedEntries, vector<size_t>& sortedIndices, int& bestAxis, size_t& bestSplitIndex) {
-    float minMarginSum = numeric_limits<float>::max();
-    size_t bestIndex = 0;
-
-    for (int axis = 0; axis < dimensions; ++axis) {
-        float marginSum = 0.0f;
-
-        for (size_t i = 0; i < sortedEntries.size(); ++i) 
-            marginSum += sortedEntries[i].getAreaIncrease(Rectangle::combine(vector<Rectangle>(sortedEntries.begin(), sortedEntries.begin() + i)));
-
-        if (marginSum < minMarginSum) {
-            minMarginSum = marginSum;
-            bestIndex = axis;
+Node* RStarTree::insertNode(Node* currentNode, Node* parent, Node* newNode) {
+    if (!currentNode)
+        // Current node is null, returning new node
+        return newNode;
+    
+    if (currentNode->isLeaf) {
+        // Current node is a leaf, creating new internal node
+        Node* newInternalNode = new Node(false);
+        newInternalNode->children.push_back(currentNode);
+        newInternalNode->children.push_back(newNode);
+        newInternalNode->entries.push_back(Rectangle::combine(currentNode->entries));
+        newInternalNode->entries.push_back(Rectangle::combine(newNode->entries));
+        return newInternalNode;
+    }
+    
+    Node* bestNode = chooseSubtree(currentNode, Rectangle::combine(newNode->entries), true);
+    
+    if (bestNode->isLeaf) {
+        // Best node is a leaf, adding new node as child
+        currentNode->entries.push_back(Rectangle::combine(newNode->entries));
+        currentNode->children.push_back(newNode);
+    } else {
+        // Recursively inserting into best node
+        Node* result = insertNode(bestNode, currentNode, newNode);
+        
+        if (result != bestNode) {
+            // Best node was replaced, updating reference
+            for (size_t i = 0; i < currentNode->children.size(); i++) {
+                if (currentNode->children[i] == bestNode) {
+                    currentNode->children[i] = result;
+                    break;
+                }
+            }
         }
     }
+    
+    // Ensure entries and children are synchronized
+    updateRectangles(currentNode);
 
-    bestAxis = bestIndex;
-    bestSplitIndex = sortedIndices[bestIndex];
+    // Log current state of node
+    cout << "Current node has " << currentNode->entries.size() << " entries and " << currentNode->children.size() << " children." << endl;
+    cout << "Entries: ";
+    for (const auto& entry : currentNode->entries) {
+        cout << "(";
+        for (size_t i = 0; i < entry.minCoords.size(); ++i) {
+            cout << entry.minCoords[i];
+            if (i < entry.minCoords.size() - 1) cout << ", ";
+        }
+        cout << "), (";
+        for (size_t i = 0; i < entry.maxCoords.size(); ++i) {
+            cout << entry.maxCoords[i];
+            if (i < entry.maxCoords.size() - 1) cout << ", ";
+        }
+        cout << ") ";
+    }
+    cout << endl;
+
+    // Ensure entries and children sizes are consistent
+    if (currentNode->children.size() != currentNode->entries.size()) 
+        cerr << "Error: Mismatch between entries and children sizes." << endl;
+    
+    if (currentNode->entries.size() > maxEntries) {
+        // Current node exceeds max entries, splitting node
+        Node* splitResult = splitNode(currentNode, parent);
+        if (splitResult != currentNode) {
+            if (parent) {
+                for (size_t i = 0; i < parent->children.size(); i++) {
+                    if (parent->children[i] == currentNode) {
+                        parent->children[i] = splitResult;
+                        break;
+                    }
+                }
+            }
+        }
+        return splitResult;
+    }
+    return currentNode;
+}
+
+void RStarTree::chooseBestSplit(const vector<Rectangle>& sortedEntries, vector<size_t>& sortedIndices, int& bestAxis, size_t& bestSplitIndex) {
+
+    float minOverlap = numeric_limits<float>::max();
+    float minArea = numeric_limits<float>::max();
+
+    for (int axis = 0; axis < dimensions; ++axis) {
+        // Sort entries by minCoords along the current axis and track indices
+        sort(sortedIndices.begin(), sortedIndices.end(),
+             [&sortedEntries, axis](size_t i, size_t j) {
+                 return sortedEntries[i].minCoords[axis] < sortedEntries[j].minCoords[axis];
+             });
+
+        vector<Rectangle> sortedByAxis(sortedEntries.size());
+        for (size_t i = 0; i < sortedIndices.size(); ++i) 
+            sortedByAxis[i] = sortedEntries[sortedIndices[i]];
+
+        // Evaluate split points for the current axis
+        for (size_t splitIndex = minEntries; splitIndex <= sortedEntries.size() - minEntries; ++splitIndex) {
+            vector<Rectangle> leftEntries(sortedByAxis.begin(), sortedByAxis.begin() + splitIndex);
+            vector<Rectangle> rightEntries(sortedByAxis.begin() + splitIndex, sortedByAxis.end());
+
+            Rectangle leftBoundingRect = Rectangle::combine(leftEntries);
+            Rectangle rightBoundingRect = Rectangle::combine(rightEntries);
+
+            float overlap = leftBoundingRect.getOverlapArea(rightBoundingRect);
+            float area = leftBoundingRect.area() + rightBoundingRect.area();
+
+            if (overlap < minOverlap || (overlap == minOverlap && area < minArea)) {
+                bestAxis = axis;
+                bestSplitIndex = splitIndex;
+                minOverlap = overlap;
+                minArea = area;
+            }
+        }
+    }
 }
 
 void RStarTree::sortEntriesAndChildren(Node* node, const vector<Rectangle>& sortedEntries, vector<size_t>& sortedIndices, int bestAxis) {
@@ -485,10 +610,42 @@ void RStarTree::rangeQuery(Node* node, const Rectangle& query, vector<Rectangle>
     for (size_t i = 0; i < node->entries.size(); ++i) {
         const Rectangle& currentEntry = node->entries[i];
         if (query.overlapCheck(currentEntry)) {
-            if (node->isLeaf) results.push_back(currentEntry);
-            else rangeQuery(node->children[i], query, results);
+            if (node->isLeaf)
+                results.push_back(currentEntry);
+            else {
+                if (i < node->children.size())
+                    rangeQuery(node->children[i], query, results);
+                else {
+                    cerr << "Error: Child index out of bounds." << endl;
+                    return;
+                }
+            }
         }
     }
+}
+
+void RStarTree::checkHealth() const {
+    function<void(const Node*)> validateNode = [&](const Node* node) {
+        if (!node) return;
+
+        if (!node->isLeaf) {
+            vector<Rectangle> childRects;
+            for (const auto* child : node->children) 
+                childRects.push_back(Rectangle::combine(child->entries));
+
+            Rectangle combinedRect = Rectangle::combine(childRects);
+            if (!node->entries[0].overlapCheck(combinedRect)) {
+                cerr << "Validation Error: Parent rectangle does not encompass all children!" << endl;
+                node->entries[0].printRectangle("Parent Rect");
+                combinedRect.printRectangle("Combined Child Rects");
+            }
+
+            for (const auto* child : node->children) {
+                validateNode(child);
+            }
+        }
+    };
+    validateNode(root);
 }
 
 #endif // RSTARTREE_HPP

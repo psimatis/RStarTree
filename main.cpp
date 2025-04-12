@@ -7,9 +7,9 @@ int main() {
     RStarTree tree(10, 2);
 
     // Random number generation setup
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_real_distribution<> dis(0.0, 10.0);
+    random_device rd;
+    mt19937 gen(rd());
+    uniform_real_distribution<> dis(0.0, 10.0);
 
     // Generate random rectangles for bulk loading
     vector<Rectangle> rectangles;
@@ -20,13 +20,21 @@ int main() {
         float maxY = minY + dis(gen);
         rectangles.emplace_back(i, vector<float>{minX, minY}, vector<float>{maxX, maxY});
     }
-    std::cout << "Bulk loading rectangles..." << std::endl;
+    cout << "Bulk loading rectangles..." << endl;
     tree.bulkLoad(rectangles);
+    
+    // Check tree health after bulk loading
+    cout << "Checking tree health after bulk loading..." << endl;
+    tree.checkHealth();
 
     // Insert a single rectangle
-    std::cout << "Inserting a single rectangle..." << std::endl;
+    cout << "Inserting a single rectangle..." << endl;
     Rectangle singleRect(101, {3.0f, 3.0f}, {8.0f, 8.0f});
     tree.insert(singleRect);
+    
+    // Check tree health after single insertion
+    cout << "Checking tree health after single insertion..." << endl;
+    tree.checkHealth();
 
     // Generate random rectangles for batch insertion
     vector<Rectangle> moreRectangles;
@@ -37,17 +45,26 @@ int main() {
         float maxY = minY + dis(gen);
         moreRectangles.emplace_back(i, vector<float>{minX, minY}, vector<float>{maxX, maxY});
     }
-    std::cout << "Batch inserting rectangles..." << std::endl;
+    cout << "Batch inserting rectangles..." << endl;
     tree.batchInsert(moreRectangles);
+    
+    // Check tree health after batch insertion
+    cout << "Checking tree health after batch insertion..." << endl;
+    tree.checkHealth();
 
     // Perform a range query
-    std::cout << "Performing a range query..." << std::endl;
-    Rectangle query(23, {0.0f, 0.0f}, {20.0f, 20.0f});
+    cout << "Performing a range query..." << endl;
+    Rectangle query(23, {0.0f, 0.0f}, {5.0f, 5.0f});
     auto results = tree.rangeQuery(query);
 
     // Print the results
+    cout << "Range query results: " << results.size() << endl;
     for (const auto& res : results) 
         res.printRectangle("Result");
+    
+    // Final tree health check
+    cout << "Final tree health check..." << endl;
+    tree.checkHealth();
         
     return 0;
 }
