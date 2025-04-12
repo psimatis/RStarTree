@@ -19,18 +19,13 @@ public:
     Rectangle() = default;
     Rectangle(int dimensions);
     Rectangle(const int id, const vector<float>& min, const vector<float>& max);
-
     vector<float> getCenter() const;
     static Rectangle combine(const vector<Rectangle>& rectangles);
-
     float area() const;
     float getAreaIncrease(const Rectangle& other) const;
-
     float overlap(const Rectangle& other) const;
     bool overlapCheck(const Rectangle& other) const;
-
     void printRectangle(const string& label) const;
-    
     bool operator==(const Rectangle& other) const {
         return minCoords == other.minCoords && maxCoords == other.maxCoords;
     }
@@ -41,10 +36,8 @@ public:
     bool isLeaf;
     vector<Rectangle> entries;
     vector<Node*> children;
-
     Node(bool leaf);
     Node(const vector<Rectangle>& entries);
-    
     ~Node();
 };
 
@@ -72,11 +65,6 @@ private:
     int minEntries;
     int dimensions;
 
-    struct TreeInfo info;
-    
-    // Helper method to find a node's parent
-    bool findNodeParent(Node* current, Node* target, Node*& parent);
-
 public:
     RStarTree(int maxEntries, int dimensions);
     ~RStarTree();
@@ -87,24 +75,13 @@ public:
     void batchInsert(vector<Rectangle>& rectangles);
     void recursiveSTRSort(vector<Rectangle>& rects, int dim, int maxDim);
     void bulkLoad(vector<Rectangle>& rectangles);
-
     Node* chooseSubtree(Node* currentNode, const Rectangle& entry, bool isBatch);
-
     Node* splitNode(Node* node, Node* parent);
-
     void chooseBestSplit(const vector<Rectangle>& sortedEntries, vector<size_t>& sortedIndices, int& bestAxis, size_t& bestSplitIndex);
     void sortEntriesAndChildren(Node* node, const vector<Rectangle>& sortedEntries, vector<size_t>& sortedIndices, int bestAxis);
     void updateRectangles(Node* node);
-
     vector<Rectangle> rangeQuery(const Rectangle& query);
     void rangeQuery(Node* node, const Rectangle& query, vector<Rectangle>& results);
-        
-    void printTree() const;
-
-    void checkHealth() const;
-
-    float calculateSizeInMB() const;
-    TreeInfo getInfo() const;
 };
 
 /////////////////////
@@ -191,9 +168,8 @@ vector<float> Rectangle::getCenter() const {
 
 void Rectangle::printRectangle(const string& label) const {
     cout << label << " [";
-    if (id != -1) { // Print ID only if it is valid (not the default -1)
+    if (id != -1) // Print ID only if it is valid (not the default -1)
         cout << "ID: " << id << ", ";
-    }
     cout << "(";
     for (size_t i = 0; i < minCoords.size(); ++i) {
         cout << minCoords[i];
@@ -347,9 +323,8 @@ void RStarTree::bulkLoad(vector<Rectangle>& rectangles) {
 void RStarTree::updateRectangles(Node* node) {
     if (!node || node->isLeaf) return;
 
-    for (auto* child : node->children) {
+    for (auto* child : node->children) 
         node->entries.push_back(Rectangle::combine(child->entries));
-    }
 }
 
 void RStarTree::reinsert(Node* node, Node* parent) {
@@ -366,13 +341,11 @@ void RStarTree::reinsert(Node* node, Node* parent) {
     for (size_t i = 0; i < reinsertCount; i++) {
         size_t idx = node->entries.size() - 1;
         entriesToReinsert.push_back(node->entries[idx]);
-        if (!node->isLeaf) {
+        if (!node->isLeaf) 
             childrenToReinsert.push_back(node->children[idx]);
-        }
         node->entries.pop_back();
-        if (!node->isLeaf) {
+        if (!node->isLeaf) 
             node->children.pop_back();
-        }
     }
 
     // Update MBR after removing entries
@@ -380,10 +353,10 @@ void RStarTree::reinsert(Node* node, Node* parent) {
 
     // Reinsert entries
     for (size_t i = 0; i < entriesToReinsert.size(); i++) {
-        if (node->isLeaf) {
+        if (node->isLeaf) 
             // For leaf nodes, just reinsert the entry
             root = insert(root, nullptr, entriesToReinsert[i], false);
-        } else {
+        else {
             // For internal nodes, find the best subtree for each child
             Node* child = childrenToReinsert[i];
             Rectangle mbr = entriesToReinsert[i];
@@ -400,43 +373,18 @@ void RStarTree::reinsert(Node* node, Node* parent) {
             
             // Check if the best node needs to be split
             if (bestNode->entries.size() > maxEntries) {
-                // Find the parent of bestNode
-                Node* bestNodeParent = nullptr;
-                findNodeParent(root, bestNode, bestNodeParent);
-                
-                // Split the node
-                Node* newNode = splitNode(bestNode, bestNodeParent);
+                // We know the parent of bestNode is root in this context
+                Node* newNode = splitNode(bestNode, root);
                 
                 // If the root was split, update it
-                if (bestNode == root) {
+                if (bestNode == root) 
                     root = newNode;
-                }
             }
         }
     }
 }
 
-// Helper method to find a node's parent
-bool RStarTree::findNodeParent(Node* current, Node* target, Node*& parent) {
-    if (!current || !target) return false;
-    
-    // Check if any of the children is the target
-    for (Node* child : current->children) {
-        if (child == target) {
-            parent = current;
-            return true;
-        }
-    }
-    
-    // Recursively check all children
-    for (Node* child : current->children) {
-        if (findNodeParent(child, target, parent)) {
-            return true;
-        }
-    }
-    
-    return false;
-}
+
 
 void RStarTree::chooseBestSplit(const vector<Rectangle>& sortedEntries, vector<size_t>& sortedIndices, int& bestAxis, size_t& bestSplitIndex) {
     float minMarginSum = numeric_limits<float>::max();
@@ -445,9 +393,8 @@ void RStarTree::chooseBestSplit(const vector<Rectangle>& sortedEntries, vector<s
     for (int axis = 0; axis < dimensions; ++axis) {
         float marginSum = 0.0f;
 
-        for (size_t i = 0; i < sortedEntries.size(); ++i) {
+        for (size_t i = 0; i < sortedEntries.size(); ++i) 
             marginSum += sortedEntries[i].getAreaIncrease(Rectangle::combine(vector<Rectangle>(sortedEntries.begin(), sortedEntries.begin() + i)));
-        }
 
         if (marginSum < minMarginSum) {
             minMarginSum = marginSum;
@@ -467,9 +414,8 @@ void RStarTree::sortEntriesAndChildren(Node* node, const vector<Rectangle>& sort
     });
 
     vector<Node*> sortedChildren;
-    for (size_t index : sortedIndices) {
+    for (size_t index : sortedIndices) 
         sortedChildren.push_back(node->children[index]);
-    }
 
     node->children = sortedChildren;
 }
@@ -488,28 +434,24 @@ Node* RStarTree::splitNode(Node* node, Node* parent) {
     vector<Node*> childrenToMove;
 
     // Move half of the entries to the new node
-    for (size_t i = splitIndex; i < node->entries.size(); ++i) {
+    for (size_t i = splitIndex; i < node->entries.size(); ++i)
         entriesToMove.push_back(node->entries[i]);
-    }
 
     // Move corresponding children if not a leaf
     if (!node->isLeaf) {
-        for (size_t i = splitIndex; i < node->children.size(); ++i) {
+        for (size_t i = splitIndex; i < node->children.size(); ++i) 
             childrenToMove.push_back(node->children[i]);
-        }
     }
 
     // Update new node with entries and children
     newNode->entries = entriesToMove;
-    if (!node->isLeaf) {
+    if (!node->isLeaf) 
         newNode->children = childrenToMove;
-    }
 
     // Remove moved entries and children from original node
     node->entries.resize(splitIndex);
-    if (!node->isLeaf) {
+    if (!node->isLeaf) 
         node->children.resize(splitIndex);
-    }
 
     // Update MBRs
     updateRectangles(node);
