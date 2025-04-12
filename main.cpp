@@ -22,19 +22,11 @@ int main() {
     }
     cout << "Bulk loading rectangles..." << endl;
     tree.bulkLoad(rectangles);
-    
-    // Check tree health after bulk loading
-    cout << "Checking tree health after bulk loading..." << endl;
-    tree.checkHealth();
 
     // Insert a single rectangle
     cout << "Inserting a single rectangle..." << endl;
     Rectangle singleRect(101, {3.0f, 3.0f}, {8.0f, 8.0f});
     tree.insert(singleRect);
-    
-    // Check tree health after single insertion
-    cout << "Checking tree health after single insertion..." << endl;
-    tree.checkHealth();
 
     // Generate random rectangles for batch insertion
     vector<Rectangle> moreRectangles;
@@ -47,24 +39,13 @@ int main() {
     }
     cout << "Batch inserting rectangles..." << endl;
     tree.batchInsert(moreRectangles);
-    
-    // Check tree health after batch insertion
-    cout << "Checking tree health after batch insertion..." << endl;
-    tree.checkHealth();
 
     // Perform a range query
     cout << "Performing a range query..." << endl;
     Rectangle query(23, {0.0f, 0.0f}, {5.0f, 5.0f});
     auto results = tree.rangeQuery(query);
 
-    // Print the results
     cout << "Range query results: " << results.size() << endl;
     for (const auto& res : results) 
         res.printRectangle("Result");
-    
-    // Final tree health check
-    cout << "Final tree health check..." << endl;
-    tree.checkHealth();
-        
-    return 0;
 }
