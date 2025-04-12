@@ -1,2 +1,2 @@
-g++ main.cpp RStarTree.cpp -o rstartree.exe
+g++ main.cpp RStarTree.hpp -o rstartree.exe
 ./rstartree.exe
