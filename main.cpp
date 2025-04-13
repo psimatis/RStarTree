@@ -4,7 +4,7 @@
 
 int main() {
     // Create a new R*-Tree with node capacity = 10 and 2 dimensions
-    RStarTree tree(10, 2);
+    RStarTree tree(5, 2);
 
     // Random number generation setup
     random_device rd;
@@ -30,7 +30,7 @@ int main() {
 
     // Generate random rectangles for batch insertion
     vector<Rectangle> moreRectangles;
-    for (int i = 112; i < 122; ++i) {
+    for (int i = 112; i < 1022; ++i) {
         float minX = dis(gen);
         float minY = dis(gen);
         float maxX = minX + dis(gen);

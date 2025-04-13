@@ -242,6 +242,12 @@ Node* RStarTree::chooseSubtree(Node* currentNode, const Rectangle& entry, bool i
 }
 
 void RStarTree::batchInsert(vector<Rectangle>& rectangles) {
+
+    if (root->isLeaf && root->entries.empty()){
+        bulkLoad(rectangles);
+        return;
+    }
+
     sort(rectangles.begin(), rectangles.end(), [](const Rectangle& a, const Rectangle& b) {
         return a.minCoords[0] < b.minCoords[0];
     });
