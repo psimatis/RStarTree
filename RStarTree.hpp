@@ -52,10 +52,11 @@ public:
     ~RStarTree();
     void insert(const Rectangle& entry);
     Node* insert(Node* currentNode, const Rectangle& entry, bool allowReinsertion);
-    void reinsert(Node* node);
     void batchInsert(vector<Rectangle>& rectangles);
-    void recursiveSTRSort(vector<Rectangle>& rects, int dim, int maxDim);
+    Node* insertNode(Node* currentNode, Node* newNode);
     void bulkLoad(vector<Rectangle>& rectangles);
+    void recursiveSTRSort(vector<Rectangle>& rects, int dim, int maxDim);
+    void reinsert(Node* node);
     Node* chooseSubtree(Node* currentNode, const Rectangle& entry, bool isBatch);
     Node* splitNode(Node* node);
     void chooseBestSplit(const vector<Rectangle>& sortedEntries, vector<size_t>& sortedIndices, int& bestAxis, size_t& bestSplitIndex);
@@ -63,8 +64,8 @@ public:
     void updateRectangles(Node* node);
     vector<Rectangle> rangeQuery(const Rectangle& query);
     void rangeQuery(Node* node, const Rectangle& query, vector<Rectangle>& results);
-    Node* insertNode(Node* currentNode, Node* newNode);
-    void checkHealth() const;
+    float calculateSizeInMB() const;
+
 };
 
 /////////////////////
@@ -568,6 +569,36 @@ void RStarTree::rangeQuery(Node* node, const Rectangle& query, vector<Rectangle>
             }
         }
     }
+}
+
+float RStarTree::calculateSizeInMB() const {
+    size_t totalSize = 0;
+
+    function<void(const Node*)> calculateNodeSize = [&](const Node* node) {
+        if (!node) return;
+
+        totalSize += sizeof(bool);
+        totalSize += sizeof(Node*); 
+        totalSize += sizeof(vector<Node*>);
+        totalSize += sizeof(vector<Rectangle>); 
+
+        // Ignore data points
+        if (!node->isLeaf) {
+            totalSize += node->entries.size() * sizeof(Rectangle);
+
+            for (const auto& rectangle : node->entries)
+                totalSize += 2 * (dimensions * sizeof(float));
+        }
+
+        totalSize += node->children.size() * sizeof(Node*);
+
+        for (const auto* child : node->children)
+            calculateNodeSize(child);
+    };
+
+    calculateNodeSize(root);
+
+    return static_cast<float>(totalSize) / (1024.0f * 1024.0f); 
 }
 
 #endif // RSTARTREE_HPP
