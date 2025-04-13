@@ -23,7 +23,7 @@ Command-line arguments:
 =====================================================================
  */
 
-#include "RStarTree.h"
+#include "../RStarTree.hpp"
 #include <iostream>
 #include <cstdlib>
 #include <ctime>
@@ -157,24 +157,12 @@ void performQueries(RStarTree& tree, const vector<Rectangle>& dataPoints, int nu
     cout << "Total R*Tree query time: " << totalTreeQueryTime / 1000000 << "s" << endl;
 }
 
-void report(TreeInfo stats){
+void report(RStarTree& tree){
     cout << "Tree info" << endl;
-
-    cout << "   Dimension: " << stats.dimensions << endl;
-    cout << "   Capacity: " << stats.capacity << endl;
-    cout << "   Min capacity: " << stats.minCapacity << endl << endl;
-
-    cout << "   Height: " << stats.height << endl;
-    cout << "   Total nodes: " << stats.totalNodes << endl;
-    cout << "   Internal nodes: " << stats.internalNodes << endl;
-    cout << "   Leaf nodes: " << stats.leafNodes << endl;
-    cout << "   Data entries: " << stats.totalDataEntries << endl << endl;
-    
-    cout << "   Size in MB: " << stats.sizeInMB << endl << endl;
-
-    cout << "   Total node visits: " << stats.totalNodeVisits << endl;
-    cout << "   Leaf node visits: " << stats.leafNodeVisits << endl;
-    cout << "   Internal node visits: " << stats.internalNodeVisits << endl;
+    cout << "   Dimension: " << tree.dimensions << endl;
+    cout << "   Capacity: " << tree.maxEntries << endl;
+    cout << "   Min capacity: " << tree.minEntries << endl << endl;
+    cout << "   Size in MB: " << tree.calculateSizeInMB() << endl << endl;
     cout << "-------------------------" << endl << endl;
 }
 
@@ -197,19 +185,19 @@ int main(int argc, char* argv[]) {
     RStarTree treeOneByOne(capacity, dimension);
     insert(treeOneByOne, dataPoints);
     performQueries(treeOneByOne, dataPoints, numQueries, spaceMax, validateResults);
-    report(treeOneByOne.getInfo());
+    report(treeOneByOne);
 
     cout << "*Test: Batch insertion*" << endl;
     RStarTree treeBatch(capacity, dimension);
     insertBatches(treeBatch, dataPoints, capacity);
     performQueries(treeBatch, dataPoints, numQueries, spaceMax, validateResults);
-    report(treeBatch.getInfo());
+    report(treeBatch);
 
     cout << "*Test: Bulk loading*" << endl;
     RStarTree treeBulk(capacity, dimension);
     insertBulkLoad(treeBulk, dataPoints);
     performQueries(treeBulk, dataPoints, numQueries, spaceMax, validateResults);
-    report(treeBulk.getInfo());
+    report(treeBulk);
 
     cout << endl << "Benchmark completed." << endl << endl;
     return 0;
