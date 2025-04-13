@@ -40,6 +40,18 @@ int main() {
     cout << "Batch inserting rectangles..." << endl;
     tree.batchInsert(moreRectangles);
 
+    // Generate random rectangles for batch insertion
+    vector<Rectangle> moreRectangles2;
+    for (int i = 312; i < 3022; ++i) {
+        float minX = dis(gen);
+        float minY = dis(gen);
+        float maxX = minX + dis(gen);
+        float maxY = minY + dis(gen);
+        moreRectangles2.emplace_back(i, vector<float>{minX, minY}, vector<float>{maxX, maxY});
+    }
+    cout << "Batch inserting rectangles..." << endl;
+    tree.batchInsert(moreRectangles2);
+
     // Perform a range query
     cout << "Performing a range query..." << endl;
     Rectangle query(23, {0.0f, 0.0f}, {5.0f, 5.0f});

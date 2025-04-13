@@ -51,7 +51,7 @@ public:
     RStarTree(int maxEntries, int dimensions);
     ~RStarTree();
     void insert(const Rectangle& entry);
-    Node* insert(Node* currentNode, const Rectangle& entry, bool allowReinsertion);
+    void insert(Node* currentNode, const Rectangle& entry, bool allowReinsertion);
     void batchInsert(vector<Rectangle>& rectangles);
     Node* insertNode(Node* currentNode, Node* newNode);
     void bulkLoad(vector<Rectangle>& rectangles);
@@ -178,50 +178,36 @@ RStarTree::~RStarTree() {
 }
 
 void RStarTree::insert(const Rectangle& entry) {
-    root = insert(root, entry, true);
+    if (!root) {
+        // Create a new root for empty tree
+        root = new Node(true);
+    }
+    insert(root, entry, true);
 }
 
-Node* RStarTree::insert(Node* currentNode, const Rectangle& entry, bool allowReinsertion) {
-    if (!currentNode) {
-        // Create a new leaf node if the tree is empty
-        Node* newNode = new Node(true);
-        newNode->entries.push_back(entry);
-        return newNode;
-    }
+void RStarTree::insert(Node* currentNode, const Rectangle& entry, bool allowReinsertion) {
+    if (!currentNode) return;
     
     if (currentNode->isLeaf) {
         currentNode->entries.push_back(entry);
-        updateRectangles(currentNode);
         
         if (currentNode->entries.size() > maxEntries) {
-            Node* splitResult = splitNode(currentNode);
-            if (allowReinsertion) reinsert(splitResult);
-            return splitResult;
-        }
-    } else {
-        Node* bestSubtree = chooseSubtree(currentNode, entry, false);
-        Node* updatedSubtree = insert(bestSubtree, entry, allowReinsertion);
-        
-        // If the subtree was replaced (e.g., due to a split), update the reference in the current node
-        if (updatedSubtree != bestSubtree) {
-            for (size_t i = 0; i < currentNode->children.size(); i++) {
-                if (currentNode->children[i] == bestSubtree) {
-                    currentNode->children[i] = updatedSubtree;
-                    break;
+            if (allowReinsertion) {
+                reinsert(currentNode);
+            } else {
+                Node* newRoot = splitNode(currentNode);
+                if (currentNode == root) {
+                    root = newRoot;
                 }
             }
         }
-        
-        // Update the current node's entries
-        updateRectangles(currentNode);
-        
-        if (currentNode->entries.size() > maxEntries) {
-            Node* splitResult = splitNode(currentNode);
-            if (allowReinsertion) reinsert(splitResult);
-            return splitResult;
+    } else {
+        Node* bestSubtree = chooseSubtree(currentNode, entry, false);
+        if (bestSubtree) {
+            insert(bestSubtree, entry, allowReinsertion);
+            updateRectangles(currentNode);
         }
     }
-    return currentNode;
 }
 
 Node* RStarTree::chooseSubtree(Node* currentNode, const Rectangle& entry, bool isBatch) {
@@ -348,9 +334,10 @@ void RStarTree::reinsert(Node* node) {
 
     // Reinsert entries
     for (size_t i = 0; i < entriesToReinsert.size(); i++) {
-        if (node->isLeaf) 
+        if (node->isLeaf) {
             // For leaf nodes, just reinsert the entry
-            root = insert(root, entriesToReinsert[i], false);
+            insert(root, entriesToReinsert[i], false);
+        }
         else {
             // For internal nodes, find the best subtree for each child
             Node* child = childrenToReinsert[i];

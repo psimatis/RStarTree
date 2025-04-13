@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Compile the benchmark
-g++ -std=c++17 -o benchmark tests/benchmark.cpp
+g++ -std=c++17 -o benchmark.exe benchmark.cpp
 
 # Check if compilation was successful
 if [ $? -ne 0 ]; then
@@ -18,7 +18,7 @@ fi
 # -v: Enable validation with linear scan
 
 echo "Running R*-Tree benchmark with linear scan comparison..."
-./benchmark -n 10000 -q 1000 -c 128 -d 2 -v
+./benchmark.exe -n 10000 -q 1000 -c 128 -d 2 -v
 
 # You can modify the parameters above to test different configurations
 # For example, to test with more data points:
