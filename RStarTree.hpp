@@ -10,6 +10,10 @@
 
 using namespace std;
 
+/////////////////////
+// Rectangle
+/////////////////////
+
 class Rectangle {
 public:
     int id;
@@ -30,47 +34,6 @@ public:
     }
 };
 
-class Node {
-public:
-    bool isLeaf;
-    vector<Rectangle> entries;
-    vector<Node*> children;
-
-    Node(bool leaf);
-    Node(const vector<Rectangle>& entries);
-    ~Node();
-};
-
-class RStarTree {
-public:
-    Node* root;
-    int maxEntries;
-    int minEntries;
-    int dimensions;
-
-    RStarTree(int maxEntries, int dimensions);
-    ~RStarTree();
-    void insert(const Rectangle& entry);
-    void insert(Node* currentNode, const Rectangle& entry, bool allowReinsertion);
-    void batchInsert(vector<Rectangle>& rectangles);
-    Node* insertNode(Node* currentNode, Node* newNode);
-    void bulkLoad(vector<Rectangle>& rectangles);
-    void recursiveSTRSort(vector<Rectangle>& rects, int dim, int maxDim);
-    void reinsert(Node* node);
-    Node* chooseSubtree(Node* currentNode, const Rectangle& entry, bool isBatch);
-    Node* splitNode(Node* node);
-    void chooseBestSplit(const vector<Rectangle>& sortedEntries, vector<size_t>& sortedIndices, int& bestAxis, size_t& bestSplitIndex);
-    void sortEntriesAndChildren(Node* node, const vector<Rectangle>& sortedEntries, vector<size_t>& sortedIndices, int bestAxis);
-    void updateRectangles(Node* node);
-    vector<Rectangle> rangeQuery(const Rectangle& query);
-    void rangeQuery(Node* node, const Rectangle& query, vector<Rectangle>& results);
-    float calculateSizeInMB() const;
-
-};
-
-/////////////////////
-// Rectangle
-/////////////////////
 Rectangle::Rectangle(int dimensions)
     : id(-1), 
       minCoords(dimensions, numeric_limits<float>::max()),
@@ -80,7 +43,7 @@ Rectangle::Rectangle(const int id, const vector<float>& min, const vector<float>
     : id(id), minCoords(min), maxCoords(max) {}
 
 float Rectangle::getArea() const {
-    float result = 1.0f;
+    float result = 1.0F;
     for (size_t i = 0; i < minCoords.size(); ++i)
         result *= (maxCoords[i] - minCoords[i]);
     return result;
@@ -129,7 +92,7 @@ bool Rectangle::overlapCheck(const Rectangle& other) const {
 vector<float> Rectangle::getCenter() const {
     vector<float> center(minCoords.size());
     for (size_t i = 0; i < minCoords.size(); ++i)
-        center[i] = (minCoords[i] + maxCoords[i]) / 2.0f;
+        center[i] = (minCoords[i] + maxCoords[i]) / 2.0F;
     return center;
 }
 
@@ -153,8 +116,20 @@ void Rectangle::printRectangle(const string& label) const {
 /////////////////////
 // Node
 /////////////////////
-Node::Node(bool leaf)
-    : isLeaf(leaf) {}
+
+class Node {
+public:
+    bool isLeaf;
+    vector<Rectangle> entries;
+    vector<Node*> children;
+
+    Node(bool isLeaf);
+    Node(const vector<Rectangle>& entries);
+    ~Node();
+};
+
+Node::Node(bool isLeaf)
+    : isLeaf(isLeaf) {}
 
 Node::Node(const vector<Rectangle>& rects)
     : isLeaf(true), entries(rects) {}
@@ -164,10 +139,37 @@ Node::~Node() {
         delete child;
 }
 
-
 /////////////////////
 // RStarTree
 ////////////////////
+
+class RStarTree {
+public:
+    Node* root;
+    int maxEntries;
+    int minEntries;
+    int dimensions;
+
+    RStarTree(int maxEntries, int dimensions);
+    ~RStarTree();
+    void insert(const Rectangle& entry);
+    void insert(Node* currentNode, const Rectangle& entry, bool allowReinsertion);
+    void batchInsert(vector<Rectangle>& rectangles);
+    Node* insertNode(Node* currentNode, Node* newNode);
+    void bulkLoad(vector<Rectangle>& rectangles);
+    void recursiveSTRSort(vector<Rectangle>& rects, int dim, int maxDim);
+    void reinsert(Node* node);
+    static Node* chooseSubtree(Node* currentNode, const Rectangle& entry, bool isBatch);
+    Node* splitNode(Node* node) const;
+    void chooseBestSplit(const vector<Rectangle>& sortedEntries, vector<size_t>& sortedIndices, size_t& bestAxis, size_t& bestSplitIndex) const;
+    static void sortEntriesAndChildren(Node* node, const vector<Rectangle>& sortedEntries, vector<size_t>& sortedIndices, size_t bestAxis);
+    static void updateRectangles(Node* node);
+    vector<Rectangle> rangeQuery(const Rectangle& query);
+    void rangeQuery(Node* node, const Rectangle& query, vector<Rectangle>& results);
+    float calculateSizeInMB() const;
+
+};
+
 RStarTree::RStarTree(int maxEntries, int dimensions)
     : maxEntries(maxEntries), minEntries(maxEntries / 2), dimensions(dimensions) {
     root = new Node(true);
@@ -178,10 +180,7 @@ RStarTree::~RStarTree() {
 }
 
 void RStarTree::insert(const Rectangle& entry) {
-    if (!root) {
-        // Create a new root for empty tree
-        root = new Node(true);
-    }
+    if (!root) root = new Node(true);
     insert(root, entry, true);
 }
 
@@ -192,13 +191,12 @@ void RStarTree::insert(Node* currentNode, const Rectangle& entry, bool allowRein
         currentNode->entries.push_back(entry);
         
         if (currentNode->entries.size() > maxEntries) {
-            if (allowReinsertion) {
+            if (allowReinsertion)
                 reinsert(currentNode);
-            } else {
+            else {
                 Node* newRoot = splitNode(currentNode);
-                if (currentNode == root) {
+                if (currentNode == root)
                     root = newRoot;
-                }
             }
         }
     } else {
@@ -341,7 +339,7 @@ void RStarTree::reinsert(Node* node) {
         else {
             // For internal nodes, find the best subtree for each child
             Node* child = childrenToReinsert[i];
-            Rectangle mbr = entriesToReinsert[i];
+            const Rectangle& mbr = entriesToReinsert[i];
             
             // Find the best node to insert this child into
             Node* bestNode = chooseSubtree(root, mbr, true);
@@ -418,7 +416,7 @@ Node* RStarTree::insertNode(Node* currentNode, Node* newNode) {
     return currentNode;
 }
 
-void RStarTree::chooseBestSplit(const vector<Rectangle>& sortedEntries, vector<size_t>& sortedIndices, int& bestAxis, size_t& bestSplitIndex) {
+void RStarTree::chooseBestSplit(const vector<Rectangle>& sortedEntries, vector<size_t>& sortedIndices, size_t& bestAxis, size_t& bestSplitIndex) const {
 
     float minOverlap = numeric_limits<float>::max();
     float minArea = numeric_limits<float>::max();
@@ -455,7 +453,7 @@ void RStarTree::chooseBestSplit(const vector<Rectangle>& sortedEntries, vector<s
     }
 }
 
-void RStarTree::sortEntriesAndChildren(Node* node, const vector<Rectangle>& sortedEntries, vector<size_t>& sortedIndices, int bestAxis) {
+void RStarTree::sortEntriesAndChildren(Node* node, const vector<Rectangle>& sortedEntries, vector<size_t>& sortedIndices, size_t bestAxis) {
     if (!node || node->children.empty()) return;
 
     // Sort indices based on the best axis
@@ -479,15 +477,14 @@ void RStarTree::sortEntriesAndChildren(Node* node, const vector<Rectangle>& sort
         node->children = sortedChildren;
 }
 
-Node* RStarTree::splitNode(Node* node) {
+Node* RStarTree::splitNode(Node* node) const {
     if (!node || node->entries.empty()) {
         cerr << "Error: Invalid node in splitNode!" << endl;
         return node;
     }
 
     // Choose split axis and index
-    int bestAxis = -1;
-    size_t bestSplitIndex;
+    size_t bestAxis = -1,  bestSplitIndex = -1;
     vector<size_t> sortedIndices(node->entries.size());
     iota(sortedIndices.begin(), sortedIndices.end(), 0); // Fill with 0, 1, ..., totalEntries-1
 
@@ -585,7 +582,7 @@ float RStarTree::calculateSizeInMB() const {
 
     calculateNodeSize(root);
 
-    return static_cast<float>(totalSize) / (1024.0f * 1024.0f); 
+    return static_cast<float>(totalSize) / (1024.0F * 1024.0F); 
 }
 
 #endif // RSTARTREE_HPP

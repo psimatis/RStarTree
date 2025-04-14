@@ -1,0 +1,19 @@
+Checks: >
+  clang-diagnostic-unused-parameter,
+  clang-diagnostic-unused-variable,
+  readability-*,
+  -readability-identifier-length,
+  -readability-braces-around-statements,
+  modernize-*,
+  -modernize-use-nodiscard,
+  -modernize-use-trailing-return-type,
+  performance-*,
+  -performance-avoid-endl,
+  bugprone-*,
+  -bugprone-easily-swappable-parameters,
+  cppcoreguidelines-*
+
+WarningsAsErrors: ''
+HeaderFilterRegex: ''
+FormatStyle: none
+UseColor: true
