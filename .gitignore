@@ -44,11 +44,16 @@ Thumbs.db
 # Ignore executables (e.g., `rstartree` in your case)
 rstartree
 
-output.txt
-
-*.py
-
+# Directories
 visualization/
 experiment_results/
-*.png
+streams/
+
+# Scripts
 tests/runB.sh
+*.py
+
+# Others
+output.txt
+
+
