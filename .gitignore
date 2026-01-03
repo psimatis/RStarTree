@@ -48,6 +48,7 @@ rstartree
 visualization/
 experiment_results/
 streams/
+data/
 
 # Scripts
 tests/runB.sh
@@ -55,5 +56,3 @@ tests/runB.sh
 
 # Others
 output.txt
-
-
